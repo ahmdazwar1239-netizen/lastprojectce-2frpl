@@ -1133,3 +1133,4 @@ function startTenantListeners(uid) {
 // ⑮ SHORTHAND UTIL
 // ══════════════════════════════════════════════════
 function el(id) { return document.getElementById(id); }
+window.openAuth   = openAuth;
