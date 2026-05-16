@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>KosKu — Manajemen Kos Modern</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* ══════════════════════════════════════════
+   ROOT & BASE
+══════════════════════════════════════════ */
+:root{
+  --bg:#0b1120; --surface:#111827; --surface2:#1a2438; --surface3:#243044;
+  --border:rgba(255,255,255,0.07); --accent:#f97316; --accent2:#fb923c;
+  --text:#f1f5f9; --muted:#64748b; --green:#22c55e; --red:#ef4444; --yellow:#eab308;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:10px;}
+
+/* ══════════════════════════════════════════
+   BG DECORATION
+══════════════════════════════════════════ */
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 10% 20%,rgba(249,115,22,.08) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 50% at 90% 80%,rgba(249,115,22,.05) 0%,transparent 60%),
+             radial-gradient(ellipse 40% 40% at 50% 50%,rgba(30,58,138,.12) 0%,transparent 70%);}
+.grid-dots{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:32px 32px;}
+
+/* ══════════════════════════════════════════
+   PAGE SYSTEM
+══════════════════════════════════════════ */
+.page{display:none;position:relative;z-index:1;}
+.page.active{display:block;}
+
+/* ══════════════════════════════════════════
+   NAVBAR (landing only)
+══════════════════════════════════════════ */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(11,17,32,.7);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);}
+.nav-logo{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:900;letter-spacing:-.02em;}
+.nav-logo span{color:var(--accent);}
+.nav-actions{display:flex;gap:10px;align-items:center;}
+
+/* ══════════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════════ */
+.btn-primary{background:var(--accent);color:white;border:none;padding:11px 26px;
+  border-radius:12px;font-weight:800;font-size:.85rem;cursor:pointer;
+  transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;
+  box-shadow:0 4px 20px rgba(249,115,22,.35);}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:0 8px 28px rgba(249,115,22,.45);}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border);
+  padding:10px 22px;border-radius:12px;font-weight:700;font-size:.85rem;
+  cursor:pointer;transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;}
+.btn-secondary:hover{background:var(--surface);border-color:rgba(255,255,255,.15);}
+.btn-danger{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.25);
+  padding:8px 16px;border-radius:10px;font-weight:700;font-size:.78rem;cursor:pointer;
+  transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;}
+.btn-danger:hover{background:rgba(239,68,68,.25);}
+.btn-green{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.25);
+  padding:8px 16px;border-radius:10px;font-weight:700;font-size:.78rem;cursor:pointer;
+  transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;}
+.btn-green:hover{background:rgba(34,197,94,.25);}
+.btn-full{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px;border-radius:14px;font-weight:800;font-size:.9rem;}
+
+/* ══════════════════════════════════════════
+   FORM ELEMENTS
+══════════════════════════════════════════ */
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:.7rem;font-weight:700;color:var(--muted);
+  margin-bottom:7px;text-transform:uppercase;letter-spacing:.05em;}
+.form-input{width:100%;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);padding:13px 16px;border-radius:13px;font-size:.88rem;
+  font-family:'Plus Jakarta Sans',sans-serif;outline:none;
+  transition:border-color .2s,box-shadow .2s;}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(249,115,22,.12);}
+.form-input::placeholder{color:#3d4f6e;}
+.pw-wrap{position:relative;}
+.pw-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);cursor:pointer;font-size:.8rem;padding:4px;}
+.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);padding:13px 16px;border-radius:13px;font-size:.88rem;
+  font-family:'Plus Jakarta Sans',sans-serif;outline:none;cursor:pointer;}
+.form-select:focus{border-color:var(--accent);}
+
+/* ══════════════════════════════════════════
+   ALERT & TOAST
+══════════════════════════════════════════ */
+.alert-box{padding:12px 16px;border-radius:12px;font-size:.78rem;font-weight:600;
+  margin-bottom:16px;display:none;}
+.alert-box.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;display:block;}
+.alert-box.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac;display:block;}
+.alert-box.warn{background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.3);color:#fde047;display:block;}
+
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px 22px;display:flex;align-items:center;gap:10px;font-size:.82rem;
+  font-weight:600;z-index:9999;box-shadow:0 20px 48px rgba(0,0,0,.5);
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.t-ok{border-color:rgba(34,197,94,.4);}
+.toast.t-err{border-color:rgba(239,68,68,.4);}
+
+/* ══════════════════════════════════════════
+   SPINNER
+══════════════════════════════════════════ */
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══════════════════════════════════════════
+   LANDING PAGE
+══════════════════════════════════════════ */
+#page-landing{min-height:100vh;}
+.hero{max-width:1100px;margin:0 auto;padding:120px 40px 80px;
+  display:flex;align-items:center;gap:60px;}
+.hero-left{flex:1;}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;
+  background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.25);
+  color:var(--accent);font-size:.7rem;font-weight:700;padding:6px 14px;
+  border-radius:100px;margin-bottom:28px;letter-spacing:.08em;text-transform:uppercase;}
+.hero-tag::before{content:'';width:6px;height:6px;background:var(--accent);
+  border-radius:50%;animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,3.8rem);
+  font-weight:900;line-height:1.05;letter-spacing:-.03em;margin-bottom:20px;}
+.hero h1 em{font-style:normal;color:var(--accent);}
+.hero p{color:var(--muted);font-size:1rem;line-height:1.7;max-width:480px;margin-bottom:36px;}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;}
+.hero-right{flex:0 0 340px;}
+
+/* Preview card */
+.preview-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;
+  padding:22px;box-shadow:0 40px 80px rgba(0,0,0,.5);
+  animation:floatCard 5s ease-in-out infinite;position:relative;}
+.preview-card::before{content:'';position:absolute;inset:-1px;border-radius:25px;
+  background:linear-gradient(135deg,rgba(249,115,22,.3),transparent,rgba(249,115,22,.1));z-index:-1;}
+@keyframes floatCard{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.card-title{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:800;}
+.badge-live{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);
+  color:var(--green);font-size:.6rem;font-weight:700;padding:3px 10px;
+  border-radius:100px;display:flex;align-items:center;gap:4px;}
+.badge-live::before{content:'';width:5px;height:5px;background:var(--green);
+  border-radius:50%;animation:blink 1.5s infinite;}
+.room-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;}
+.room-item{background:var(--surface2);border-radius:10px;padding:8px 6px;text-align:center;
+  border:1px solid var(--border);}
+.room-item.filled{background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.3);}
+.room-item.empty{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.25);}
+.room-num{font-weight:800;font-size:.72rem;}
+.room-status{font-size:.5rem;font-weight:600;margin-top:2px;opacity:.7;text-transform:uppercase;}
+.room-item.filled .room-num{color:var(--accent);}
+.room-item.empty .room-num{color:var(--green);}
+.room-item.filled .room-status{color:var(--accent2);}
+.room-item.empty .room-status{color:var(--green);}
+.stat-row{display:flex;gap:8px;}
+.stat-mini{flex:1;background:var(--surface2);border-radius:10px;padding:10px;text-align:center;}
+.stat-mini-val{font-family:'Syne',sans-serif;font-weight:900;font-size:1.1rem;color:var(--accent);}
+.stat-mini-lbl{font-size:.5rem;color:var(--muted);font-weight:600;text-transform:uppercase;}
+
+/* Live stats bar */
+.stats-bar{max-width:1100px;margin:0 auto;padding:0 40px 80px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+.stat-bar-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:24px;text-align:center;transition:all .3s;}
+.stat-bar-card:hover{transform:translateY(-3px);border-color:rgba(249,115,22,.2);}
+.stat-bar-val{font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:900;color:var(--accent);}
+.stat-bar-lbl{color:var(--muted);font-size:.75rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;margin-top:4px;}
+
+/* Features */
+.features{max-width:1100px;margin:0 auto;padding:0 40px 80px;}
+.section-label{text-align:center;font-size:.7rem;font-weight:700;color:var(--accent);
+  text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px;}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,3vw,2.4rem);
+  font-weight:900;text-align:center;letter-spacing:-.02em;margin-bottom:48px;}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;}
+.feat-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:26px;transition:all .3s;position:relative;overflow:hidden;}
+.feat-card:hover{transform:translateY(-4px);border-color:rgba(249,115,22,.25);
+  box-shadow:0 20px 48px rgba(0,0,0,.4);}
+.feat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:0;transition:opacity .3s;}
+.feat-card:hover::after{opacity:1;}
+.feat-icon{font-size:1.8rem;margin-bottom:14px;}
+.feat-card h3{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;margin-bottom:8px;}
+.feat-card p{color:var(--muted);font-size:.8rem;line-height:1.6;}
+
+/* Footer */
+.landing-footer{text-align:center;padding:36px 40px;color:var(--muted);
+  font-size:.75rem;border-top:1px solid var(--border);position:relative;z-index:1;}
+.landing-footer strong{color:var(--accent);}
+
+/* ══════════════════════════════════════════
+   AUTH MODAL
+══════════════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;
+  padding:20px;opacity:0;pointer-events:none;transition:opacity .3s;}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:28px;
+  padding:36px;width:100%;max-width:430px;box-shadow:0 40px 100px rgba(0,0,0,.7);
+  transform:translateY(20px) scale(.97);transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  position:relative;overflow:hidden;max-height:92vh;overflow-y:auto;}
+.modal-overlay.show .auth-card{transform:translateY(0) scale(1);}
+.auth-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),#fb923c,var(--accent));
+  background-size:200%;animation:shimmer 2s linear infinite;}
+@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+.auth-logo{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:900;margin-bottom:5px;}
+.auth-logo span{color:var(--accent);}
+.auth-subtitle{color:var(--muted);font-size:.8rem;margin-bottom:24px;}
+.auth-tabs{display:flex;background:var(--surface2);border-radius:14px;padding:4px;margin-bottom:22px;}
+.auth-tab{flex:1;padding:10px;border:none;background:transparent;color:var(--muted);
+  font-weight:700;font-size:.82rem;border-radius:11px;cursor:pointer;
+  transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;}
+.auth-tab.active{background:var(--accent);color:white;box-shadow:0 4px 14px rgba(249,115,22,.35);}
+.modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;
+  border-radius:10px;background:var(--surface2);border:1px solid var(--border);
+  color:var(--muted);cursor:pointer;font-size:.9rem;display:flex;
+  align-items:center;justify-content:center;transition:all .2s;}
+.modal-close:hover{background:rgba(255,255,255,.08);color:var(--text);}
+.admin-hint{background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);
+  border-radius:12px;padding:11px 14px;font-size:.75rem;color:#fdba74;
+  margin-bottom:14px;display:none;}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.divider span{color:var(--muted);font-size:.72rem;font-weight:600;}
+.google-btn{width:100%;background:var(--surface2);color:var(--text);
+  border:1px solid var(--border);padding:13px;border-radius:14px;font-weight:700;
+  font-size:.85rem;cursor:pointer;transition:all .2s;display:flex;
+  align-items:center;justify-content:center;gap:10px;font-family:'Plus Jakarta Sans',sans-serif;}
+.google-btn:hover{background:rgba(255,255,255,.06);transform:translateY(-1px);}
+.strength-bar{height:3px;border-radius:3px;background:var(--surface2);margin-top:8px;}
+.strength-fill{height:100%;border-radius:3px;transition:all .4s;width:0%;}
+.strength-lbl{font-size:.65rem;font-weight:700;margin-top:4px;}
+
+/* ══════════════════════════════════════════
+   DASHBOARD SHARED
+══════════════════════════════════════════ */
+.dash-layout{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:260px;flex-shrink:0;background:rgba(17,24,39,.98);
+  border-right:1px solid var(--border);display:flex;flex-direction:column;
+  padding:24px 14px;overflow-y:auto;}
+.sidebar-logo{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:900;
+  text-align:center;margin-bottom:6px;}
+.sidebar-logo span{color:var(--accent);}
+.sidebar-role{text-align:center;font-size:.65rem;color:var(--muted);
+  font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:24px;}
+.sidebar-user{background:var(--surface2);border-radius:16px;padding:14px;
+  margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.sidebar-avatar{width:38px;height:38px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),#fb923c);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.sidebar-uname{font-weight:800;font-size:.85rem;truncate:true;}
+.sidebar-urole{font-size:.65rem;color:var(--muted);font-weight:600;}
+.nav-section{font-size:.62rem;color:var(--muted);font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;padding:0 8px;margin:16px 0 8px;}
+.nav-btn{width:100%;text-align:left;padding:11px 14px;border-radius:14px;
+  background:transparent;border:none;color:var(--muted);font-weight:700;
+  font-size:.85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;
+  gap:10px;font-family:'Plus Jakarta Sans',sans-serif;}
+.nav-btn:hover{background:rgba(255,255,255,.05);color:var(--text);}
+.nav-btn.active{background:var(--accent);color:white;box-shadow:0 4px 14px rgba(249,115,22,.3);}
+.sidebar-logout{margin-top:auto;padding-top:16px;}
+.dash-content{flex:1;overflow-y:auto;padding:32px 36px;}
+.dash-header{margin-bottom:28px;}
+.dash-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:900;letter-spacing:-.02em;}
+.dash-subtitle{color:var(--muted);font-size:.82rem;margin-top:4px;}
+
+/* Panels */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;}
+.card-sm{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+
+/* Stat cards */
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:20px;transition:all .2s;}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-card-val{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:900;margin-bottom:4px;}
+.stat-card-lbl{color:var(--muted);font-size:.72rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;}
+.stat-card-sub{font-size:.72rem;color:var(--muted);margin-top:4px;}
+
+/* Table */
+.tbl-wrap{overflow-x:auto;border-radius:16px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;min-width:600px;}
+thead{background:var(--surface2);}
+th{padding:12px 16px;text-align:left;font-size:.68rem;font-weight:800;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+td{padding:13px 16px;font-size:.83rem;border-top:1px solid var(--border);}
+tr:hover td{background:rgba(255,255,255,.02);}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;
+  font-size:.65rem;font-weight:700;letter-spacing:.04em;}
+.badge-green{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+.badge-orange{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);color:#fdba74;}
+.badge-red{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+.badge-blue{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#93c5fd;}
+.badge-yellow{background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);color:#fde047;}
+.badge-gray{background:rgba(100,116,139,.15);border:1px solid rgba(100,116,139,.3);color:#94a3b8;}
+
+/* Room grid (admin) */
+.room-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;
+  padding:14px;cursor:pointer;transition:all .2s;text-align:center;}
+.room-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.room-card.rc-empty{border-color:rgba(34,197,94,.25);}
+.room-card.rc-empty:hover{border-color:rgba(34,197,94,.5);}
+.room-card.rc-filled{border-color:rgba(249,115,22,.25);}
+.room-card.rc-filled:hover{border-color:rgba(249,115,22,.5);}
+.room-card.rc-overdue{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.05);}
+.room-card-id{font-family:'Syne',sans-serif;font-size:1rem;font-weight:900;margin-bottom:4px;}
+.room-card-gender{font-size:.6rem;color:var(--muted);font-weight:600;margin-bottom:8px;}
+.room-card-status{font-size:.65rem;font-weight:700;}
+
+/* Modal (admin forms) */
+.form-modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.8);
+  backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;
+  padding:20px;opacity:0;pointer-events:none;transition:opacity .3s;}
+.form-modal-overlay.show{opacity:1;pointer-events:all;}
+.form-modal{background:var(--surface);border:1px solid var(--border);border-radius:24px;
+  padding:32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
+  transform:translateY(16px);transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
+.form-modal-overlay.show .form-modal{transform:translateY(0);}
+.form-modal-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:900;margin-bottom:20px;}
+
+/* Progress bar */
+.progress-bar{background:var(--surface2);border-radius:100px;height:8px;overflow:hidden;margin-top:8px;}
+.progress-fill{height:100%;border-radius:100px;background:var(--accent);transition:width .6s;}
+
+/* Tenant status card */
+.status-big{background:var(--surface);border:2px solid var(--border);border-radius:24px;
+  padding:28px;margin-bottom:20px;text-align:center;}
+.status-big.ok{border-color:rgba(34,197,94,.3);}
+.status-big.warn{border-color:rgba(234,179,8,.3);}
+.status-big.danger{border-color:rgba(239,68,68,.4);}
+.status-icon{font-size:3rem;margin-bottom:12px;}
+.status-room{font-family:'Syne',sans-serif;font-size:2rem;font-weight:900;color:var(--accent);}
+.status-detail{color:var(--muted);font-size:.85rem;margin-top:6px;}
+
+/* Responsive */
+@media(max-width:768px){
+  .hero{flex-direction:column;padding:90px 20px 40px;}
+  .hero-right{flex:none;width:100%;}
+  .stats-bar{padding:0 20px 40px;}
+  .features{padding:0 20px 60px;}
+  .sidebar{width:220px;}
+  .dash-content{padding:20px;}
+  .grid-4{grid-template-columns:repeat(2,1fr);}
+  .navbar{padding:14px 20px;}
+}
+@media(max-width:600px){
+  .dash-layout{flex-direction:column;}
+  .sidebar{width:100%;height:auto;flex-direction:row;flex-wrap:wrap;padding:12px;}
+  .dash-content{padding:16px;}
+}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="grid-dots"></div>
+
+<!-- ════════════════════════════════════════════
+     TOAST
+════════════════════════════════════════════ -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">Berhasil!</span>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: LANDING
+════════════════════════════════════════════ -->
+<div id="page-landing" class="page active">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-logo">Kos<span>Ku</span></div>
+    <div class="nav-actions">
+      <button class="btn-secondary" onclick="openAuth('login')">Masuk</button>
+      <button class="btn-primary" onclick="openAuth('register')">Daftar Gratis</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-left">
+      <div class="hero-tag">Platform Manajemen Kos #1</div>
+      <h1>Kelola Kos Lo<br/>Jadi Lebih <em>Gampang</em></h1>
+      <p>Dari pantau kamar, catat penghuni, sampai tagihan & denda — semua lo atur dalam satu platform. Cocok buat pemilik kos maupun penyewa.</p>
+      <div class="hero-cta">
+        <button class="btn-primary" style="padding:14px 32px;font-size:.95rem" onclick="openAuth('register')">Mulai Sekarang — Gratis ✨</button>
+        <button class="btn-secondary" style="padding:14px 28px" onclick="document.querySelector('.stats-bar').scrollIntoView({behavior:'smooth'})">Lihat Statistik ↓</button>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="preview-card">
+        <div class="card-header">
+          <span class="card-title">🏠 KosKu</span>
+          <span class="badge-live">Live</span>
+        </div>
+        <!-- Preview room grid (dekoratif, 8 kamar sampel) -->
+        <div class="room-grid" id="preview-rooms">
+          <div class="room-item filled"><div class="room-num">A01</div><div class="room-status">Terisi</div></div>
+          <div class="room-item filled"><div class="room-num">A02</div><div class="room-status">Terisi</div></div>
+          <div class="room-item empty"><div class="room-num">A03</div><div class="room-status">Kosong</div></div>
+          <div class="room-item empty"><div class="room-num">A04</div><div class="room-status">Kosong</div></div>
+          <div class="room-item filled"><div class="room-num">B01</div><div class="room-status">Terisi</div></div>
+          <div class="room-item empty"><div class="room-num">B02</div><div class="room-status">Kosong</div></div>
+          <div class="room-item filled"><div class="room-num">B03</div><div class="room-status">Terisi</div></div>
+          <div class="room-item empty"><div class="room-num">B04</div><div class="room-status">Kosong</div></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-mini"><div class="stat-mini-val" id="prev-filled">0</div><div class="stat-mini-lbl">Terisi</div></div>
+          <div class="stat-mini"><div class="stat-mini-val" id="prev-empty">20</div><div class="stat-mini-lbl">Kosong</div></div>
+          <div class="stat-mini"><div class="stat-mini-val" id="prev-pct">0%</div><div class="stat-mini-lbl">Hunian</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Stats -->
+  <div class="stats-bar">
+    <div class="stat-bar-card">
+      <div class="stat-bar-val" id="ls-total">20</div>
+      <div class="stat-bar-lbl">Total Kamar</div>
+    </div>
+    <div class="stat-bar-card">
+      <div class="stat-bar-val" id="ls-filled" style="color:var(--accent)">0</div>
+      <div class="stat-bar-lbl">Terisi</div>
+    </div>
+    <div class="stat-bar-card">
+      <div class="stat-bar-val" id="ls-empty" style="color:var(--green)">20</div>
+      <div class="stat-bar-lbl">Tersedia</div>
+    </div>
+    <div class="stat-bar-card">
+      <div class="stat-bar-val" id="ls-male">10</div>
+      <div class="stat-bar-lbl">👨 Kamar Pria</div>
+    </div>
+    <div class="stat-bar-card">
+      <div class="stat-bar-val" id="ls-female">10</div>
+      <div class="stat-bar-lbl">👩 Kamar Wanita</div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <section class="features">
+    <p class="section-label">Kenapa KosKu?</p>
+    <h2 class="section-title">Semua yang Lo Butuhkan</h2>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="feat-icon">🏠</div><h3>Manajemen Kamar</h3><p>20 kamar (pria & wanita) terpantau real-time. Status terisi/kosong langsung keliatan.</p></div>
+      <div class="feat-card"><div class="feat-icon">👥</div><h3>Data Penghuni</h3><p>Simpan data lengkap penyewa dengan privasi terjaga. Admin yang pegang akses penuh.</p></div>
+      <div class="feat-card"><div class="feat-icon">💰</div><h3>Tagihan & Denda</h3><p>Sewa bulanan Rp 1jt / tahunan Rp 10jt. Lewat 3 hari grace period → denda 5% otomatis.</p></div>
+      <div class="feat-card"><div class="feat-icon">📊</div><h3>Dashboard Real-time</h3><p>Statistik hunian, pendapatan, dan status pembayaran terupdate langsung via Firebase.</p></div>
+      <div class="feat-card"><div class="feat-icon">🔒</div><h3>Privasi Terjaga</h3><p>Penyewa hanya bisa lihat data sendiri. Data penyewa lain tidak bisa diakses sama sekali.</p></div>
+      <div class="feat-card"><div class="feat-icon">⚡</div><h3>4 Admin Pengelola</h3><p>Tim pengelola dengan akses setara. Kelola kamar, konfirmasi bayar, dan pantau semua dari satu dashboard.</p></div>
+    </div>
+  </section>
+
+  <footer class="landing-footer">
+    Dibuat dengan ❤️ buat proyek akhir &nbsp;·&nbsp; <strong>KosKu</strong> &nbsp;·&nbsp; Powered by Firebase
+  </footer>
+</div><!-- /page-landing -->
+
+<!-- ════════════════════════════════════════════
+     AUTH MODAL (login + register)
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="auth-card">
+    <button class="modal-close" onclick="closeAuth()">✕</button>
+    <div class="auth-logo">Kos<span>Ku</span></div>
+    <p class="auth-subtitle" id="auth-subtitle">Masuk ke akun lo 👋</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="atab-login" onclick="switchAuthTab('login')">🔑 Login</button>
+      <button class="auth-tab" id="atab-register" onclick="switchAuthTab('register')">📝 Daftar Penyewa</button>
+    </div>
+
+    <div class="alert-box" id="auth-alert"></div>
+
+    <!-- LOGIN -->
+    <div id="auth-form-login">
+      <div class="admin-hint" id="admin-hint">
+        🛡️ <strong>Mode Admin terdeteksi.</strong> Masukkan password admin lo.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username / Email</label>
+        <input class="form-input" id="l-id" type="text" placeholder="Username atau email" autocomplete="username" oninput="detectAdmin(this.value)"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="pw-wrap">
+          <input class="form-input" id="l-pw" type="password" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px"/>
+          <button class="pw-eye" onclick="togglePw('l-pw',this)">👁</button>
+        </div>
+      </div>
+      <button class="btn-primary btn-full" id="l-btn" onclick="handleLogin()">
+        <span id="l-btn-txt">Masuk</span>
+        <div class="spinner" id="l-spin"></div>
+      </button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="auth-form-register" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Nama Lengkap</label>
+        <input class="form-input" id="r-name" type="text" placeholder="Nama lengkap lo" autocomplete="name"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="r-user" type="text" placeholder="3-20 karakter, a-z/0-9/_" autocomplete="username" oninput="chkUsername(this.value)"/>
+        <div id="r-user-chk" style="font-size:.65rem;margin-top:5px;font-weight:700"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email (Gmail dianjurkan)</label>
+        <input class="form-input" id="r-email" type="email" placeholder="nama@gmail.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="pw-wrap">
+          <input class="form-input" id="r-pw" type="password" placeholder="Min. 6 karakter" autocomplete="new-password" oninput="chkStrength(this.value)" style="padding-right:44px"/>
+          <button class="pw-eye" onclick="togglePw('r-pw',this)">👁</button>
+        </div>
+        <div class="strength-bar"><div class="strength-fill" id="s-fill"></div></div>
+        <div class="strength-lbl" id="s-lbl" style="color:var(--muted)"></div>
+      </div>
+      <button class="btn-primary btn-full" id="r-btn" onclick="handleRegister()">
+        <span id="r-btn-txt">Daftar Sekarang</span>
+        <div class="spinner" id="r-spin"></div>
+      </button>
+      <div class="divider"><span>atau</span></div>
+      <button class="google-btn" onclick="handleGoogle()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.26 9.77A7.5 7.5 0 0 1 12 4.5c1.82 0 3.46.65 4.74 1.7l3.54-3.54A12 12 0 0 0 0 12c0 1.99.49 3.87 1.35 5.53l3.91-3.76Z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.67-2.96A7.5 7.5 0 0 1 4.8 14.3L.88 18.08A12 12 0 0 0 12 24Z"/><path fill="#4A90D9" d="M23.74 12.27c0-.79-.07-1.56-.2-2.27H12v4.3h6.6a5.64 5.64 0 0 1-2.44 3.71l3.67 2.96c2.14-1.98 3.38-4.9 3.38-8.27Z" opacity=".85"/><path fill="#FBBC05" d="M4.8 14.3a7.54 7.54 0 0 1 0-4.8L.89 5.76A12.02 12.02 0 0 0 0 12c0 1.93.46 3.76 1.27 5.38L4.8 14.3Z"/></svg>
+        Daftar dengan Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: ADMIN DASHBOARD
+════════════════════════════════════════════ -->
+<div id="page-admin" class="page">
+  <div class="dash-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">Kos<span>Ku</span></div>
+      <div class="sidebar-role">🛡️ Admin Panel</div>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">👨‍💼</div>
+        <div>
+          <div class="sidebar-uname" id="admin-uname">Admin</div>
+          <div class="sidebar-urole">Pengelola Kos</div>
+        </div>
+      </div>
+      <div class="nav-section">Menu</div>
+      <button class="nav-btn active" onclick="adminPanel('overview')" id="anav-overview">📊 Overview</button>
+      <button class="nav-btn" onclick="adminPanel('rooms')" id="anav-rooms">🏠 Kelola Kamar</button>
+      <button class="nav-btn" onclick="adminPanel('tenants')" id="anav-tenants">👥 Data Penyewa</button>
+      <button class="nav-btn" onclick="adminPanel('payments')" id="anav-payments">💰 Pembayaran</button>
+      <div class="sidebar-logout">
+        <button class="btn-danger" style="width:100%" onclick="doLogout()">🚪 Keluar</button>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <main class="dash-content">
+
+      <!-- OVERVIEW -->
+      <div class="panel active" id="apanel-overview">
+        <div class="dash-header">
+          <div class="dash-title">📊 Overview</div>
+          <div class="dash-subtitle">Statistik kos real-time</div>
+        </div>
+        <div class="grid-4" style="margin-bottom:24px">
+          <div class="stat-card"><div class="stat-card-val" id="ov-total">20</div><div class="stat-card-lbl">Total Kamar</div></div>
+          <div class="stat-card"><div class="stat-card-val" style="color:var(--accent)" id="ov-filled">0</div><div class="stat-card-lbl">Terisi</div></div>
+          <div class="stat-card"><div class="stat-card-val" style="color:var(--green)" id="ov-empty">20</div><div class="stat-card-lbl">Kosong</div></div>
+          <div class="stat-card"><div class="stat-card-val" style="color:var(--red)" id="ov-overdue">0</div><div class="stat-card-lbl">Menunggak</div></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:24px">
+          <div class="card">
+            <div style="font-weight:800;margin-bottom:16px">👨 Kamar Pria (A01–A10)</div>
+            <div class="grid-auto" id="ov-male-rooms"></div>
+          </div>
+          <div class="card">
+            <div style="font-weight:800;margin-bottom:16px">👩 Kamar Wanita (B01–B10)</div>
+            <div class="grid-auto" id="ov-female-rooms"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-weight:800;margin-bottom:6px">Tingkat Hunian</div>
+          <div style="color:var(--muted);font-size:.78rem;margin-bottom:10px" id="ov-occ-label">0 dari 20 kamar terisi</div>
+          <div class="progress-bar"><div class="progress-fill" id="ov-occ-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- ROOMS -->
+      <div class="panel" id="apanel-rooms">
+        <div class="dash-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="dash-title">🏠 Kelola Kamar</div>
+            <div class="dash-subtitle">Klik kamar untuk assign/lepas penyewa</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-secondary" style="font-size:.78rem;padding:8px 16px" onclick="filterRooms('all')" id="rf-all">Semua</button>
+            <button class="btn-secondary" style="font-size:.78rem;padding:8px 16px" onclick="filterRooms('male')" id="rf-male">👨 Pria</button>
+            <button class="btn-secondary" style="font-size:.78rem;padding:8px 16px" onclick="filterRooms('female')" id="rf-female">👩 Wanita</button>
+            <button class="btn-secondary" style="font-size:.78rem;padding:8px 16px" onclick="filterRooms('empty')" id="rf-empty">Kosong</button>
+          </div>
+        </div>
+        <div class="grid-auto" id="rooms-grid" style="margin-top:4px"></div>
+      </div>
+
+      <!-- TENANTS -->
+      <div class="panel" id="apanel-tenants">
+        <div class="dash-header">
+          <div class="dash-title">👥 Data Penyewa</div>
+          <div class="dash-subtitle">Semua penyewa terdaftar</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Nama</th><th>Username</th><th>Kamar</th><th>Periode Sewa</th>
+              <th>Tipe</th><th>Status</th><th>Denda</th><th>Aksi</th>
+            </tr></thead>
+            <tbody id="tenants-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PAYMENTS -->
+      <div class="panel" id="apanel-payments">
+        <div class="dash-header">
+          <div class="dash-title">💰 Pembayaran</div>
+          <div class="dash-subtitle">Konfirmasi & pantau pembayaran penyewa</div>
+        </div>
+        <div class="grid-3" style="margin-bottom:24px">
+          <div class="stat-card"><div class="stat-card-val" style="color:var(--green)" id="pay-lunas">0</div><div class="stat-card-lbl">Lunas</div></div>
+          <div class="stat-card"><div class="stat-card-val" style="color:var(--yellow)" id="pay-pending">0</div><div class="stat-card-lbl">Menunggu</div></div>
+          <div class="stat-card"><div class="stat-card-val" style="color:var(--red)" id="pay-denda">Rp 0</div><div class="stat-card-lbl">Total Denda</div></div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Nama</th><th>Kamar</th><th>Tagihan</th><th>Jatuh Tempo</th>
+              <th>Status</th><th>Denda</th><th>Aksi</th>
+            </tr></thead>
+            <tbody id="payments-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: TENANT DASHBOARD
+════════════════════════════════════════════ -->
+<div id="page-tenant" class="page">
+  <div class="dash-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">Kos<span>Ku</span></div>
+      <div class="sidebar-role">🏠 Penyewa</div>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">🏠</div>
+        <div>
+          <div class="sidebar-uname" id="tenant-uname">Penyewa</div>
+          <div class="sidebar-urole">Penghuni KosKu</div>
+        </div>
+      </div>
+      <div class="nav-section">Menu</div>
+      <button class="nav-btn active" onclick="tenantPanel('status')" id="tnav-status">🏠 Status Kamar</button>
+      <button class="nav-btn" onclick="tenantPanel('billing')" id="tnav-billing">💰 Tagihan</button>
+      <button class="nav-btn" onclick="tenantPanel('kos-info')" id="tnav-kos-info">📊 Info Kos</button>
+      <div class="sidebar-logout">
+        <button class="btn-danger" style="width:100%" onclick="doLogout()">🚪 Keluar</button>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <main class="dash-content">
+
+      <!-- STATUS -->
+      <div class="panel active" id="tpanel-status">
+        <div class="dash-header">
+          <div class="dash-title">🏠 Status Kamar Gue</div>
+          <div class="dash-subtitle">Info sewa & kamar lo</div>
+        </div>
+        <div id="t-no-room" style="display:none">
+          <div class="status-big">
+            <div class="status-icon">🔍</div>
+            <div class="status-room">Belum Ada Kamar</div>
+            <div class="status-detail">Lo belum assign ke kamar apapun. Hubungi admin untuk proses check-in.</div>
+          </div>
+        </div>
+        <div id="t-has-room" style="display:none">
+          <div class="status-big" id="t-status-card">
+            <div class="status-icon" id="t-status-icon">🏠</div>
+            <div class="status-room" id="t-room-id">---</div>
+            <div style="font-size:.8rem;color:var(--muted);margin-top:4px" id="t-room-gender"></div>
+            <div class="status-detail" id="t-status-detail"></div>
+          </div>
+          <div class="grid-3" style="margin-bottom:20px">
+            <div class="stat-card">
+              <div class="stat-card-val" id="t-days-left" style="color:var(--green)">0</div>
+              <div class="stat-card-lbl">Hari Tersisa</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-val" id="t-rent-type" style="color:var(--accent)">---</div>
+              <div class="stat-card-lbl">Tipe Sewa</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-val" id="t-pay-status-val" style="color:var(--yellow)">---</div>
+              <div class="stat-card-lbl">Status Bayar</div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-weight:800;margin-bottom:14px">📅 Detail Sewa</div>
+            <div style="display:grid;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--border)">
+                <span style="color:var(--muted);font-size:.82rem">Tanggal Masuk</span>
+                <span style="font-weight:700" id="t-start-date">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--border)">
+                <span style="color:var(--muted);font-size:.82rem">Tanggal Selesai</span>
+                <span style="font-weight:700" id="t-end-date">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="color:var(--muted);font-size:.82rem">Harga Sewa</span>
+                <span style="font-weight:700;color:var(--accent)" id="t-price">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BILLING -->
+      <div class="panel" id="tpanel-billing">
+        <div class="dash-header">
+          <div class="dash-title">💰 Tagihan Gue</div>
+          <div class="dash-subtitle">Status pembayaran & denda</div>
+        </div>
+        <div id="t-bill-no-room" class="card" style="text-align:center;padding:40px;display:none">
+          <div style="font-size:2rem;margin-bottom:12px">💳</div>
+          <div style="color:var(--muted)">Belum ada tagihan. Hubungi admin untuk check-in.</div>
+        </div>
+        <div id="t-bill-content" style="display:none">
+          <div class="grid-3" style="margin-bottom:20px">
+            <div class="stat-card">
+              <div class="stat-card-val" id="t-bill-amount" style="color:var(--accent)">Rp 0</div>
+              <div class="stat-card-lbl">Tagihan</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-val" id="t-bill-fine" style="color:var(--red)">Rp 0</div>
+              <div class="stat-card-lbl">Denda</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-val" id="t-bill-total" style="color:var(--yellow)">Rp 0</div>
+              <div class="stat-card-lbl">Total</div>
+            </div>
+          </div>
+          <div class="card" id="t-bill-detail">
+            <div style="font-weight:800;margin-bottom:16px">📋 Detail Tagihan</div>
+            <div style="display:grid;gap:12px" id="t-bill-rows"></div>
+            <div style="margin-top:16px;padding:14px;background:rgba(249,115,22,.06);border-radius:12px;border:1px solid rgba(249,115,22,.15)">
+              <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">ℹ️ Info Pembayaran</div>
+              <div style="font-size:.82rem">Pembayaran dilakukan langsung ke pengelola kos. Konfirmasi bayar akan diproses oleh admin.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KOS INFO (statistik publik) -->
+      <div class="panel" id="tpanel-kos-info">
+        <div class="dash-header">
+          <div class="dash-title">📊 Info Kos</div>
+          <div class="dash-subtitle">Statistik kamar yang bisa lo lihat</div>
+        </div>
+        <div class="grid-4" style="margin-bottom:24px">
+          <div class="stat-card"><div class="stat-card-val">20</div><div class="stat-card-lbl">Total Kamar</div></div>
+          <div class="stat-card"><div class="stat-card-val" style="color:var(--accent)" id="ti-filled">0</div><div class="stat-card-lbl">Terisi</div></div>
+          <div class="stat-card"><div class="stat-card-val" style="color:var(--green)" id="ti-empty">20</div><div class="stat-card-lbl">Tersedia</div></div>
+          <div class="stat-card"><div class="stat-card-val" id="ti-pct" style="color:var(--yellow)">0%</div><div class="stat-card-lbl">Hunian</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div style="font-weight:800;margin-bottom:14px">👨 Kamar Pria (A01–A10)</div>
+            <div id="ti-male-grid" class="grid-auto"></div>
+          </div>
+          <div class="card">
+            <div style="font-weight:800;margin-bottom:14px">👩 Kamar Wanita (B01–B10)</div>
+            <div id="ti-female-grid" class="grid-auto"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;background:rgba(249,115,22,.04);border-color:rgba(249,115,22,.15)">
+          <div style="font-size:.78rem;color:var(--muted)">🔒 <strong style="color:var(--text)">Privasi Terjaga:</strong> Lo hanya bisa lihat status kosong/terisi. Data penghuni lain tidak ditampilkan demi privasi.</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     FORM MODAL: ASSIGN PENYEWA KE KAMAR
+════════════════════════════════════════════ -->
+<div class="form-modal-overlay" id="assign-modal">
+  <div class="form-modal">
+    <div class="form-modal-title">🏠 Assign Penyewa ke <span id="assign-room-label">Kamar</span></div>
+    <div class="alert-box" id="assign-alert"></div>
+    <div class="form-group">
+      <label class="form-label">Pilih Penyewa (belum punya kamar)</label>
+      <select class="form-select" id="assign-tenant-select">
+        <option value="">-- Pilih Penyewa --</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipe Sewa</label>
+      <select class="form-select" id="assign-type" onchange="updateAssignPrice()">
+        <option value="monthly">Bulanan — Rp 1.000.000/bulan</option>
+        <option value="yearly">Tahunan — Rp 10.000.000/tahun</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tanggal Masuk</label>
+      <input class="form-input" type="date" id="assign-start"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tanggal Selesai</label>
+      <input class="form-input" type="date" id="assign-end"/>
+    </div>
+    <div class="form-group" style="background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.15);border-radius:12px;padding:14px">
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">TOTAL BIAYA</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:900;color:var(--accent)" id="assign-price-display">Rp 1.000.000</div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:4px">Denda 5% berlaku setelah 3 hari lewat jatuh tempo</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn-secondary" style="flex:1" onclick="closeAssignModal()">Batal</button>
+      <button class="btn-primary" style="flex:2" id="assign-btn" onclick="doAssign()">
+        <span id="assign-btn-txt">Assign Penyewa</span>
+        <div class="spinner" id="assign-spin" style="display:none"></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- FORM MODAL: EVICT (lepas penyewa dari kamar) -->
+<div class="form-modal-overlay" id="evict-modal">
+  <div class="form-modal">
+    <div class="form-modal-title">⚠️ Lepas Penyewa dari <span id="evict-room-label">Kamar</span></div>
+    <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:14px;padding:16px;margin-bottom:20px">
+      <div style="font-weight:800;color:#fca5a5;margin-bottom:6px">Konfirmasi</div>
+      <div style="font-size:.82rem;color:var(--muted)">Penyewa <strong id="evict-tenant-name" style="color:var(--text)">---</strong> akan dilepas dari kamar ini. Status kamar akan kembali ke kosong.</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-secondary" style="flex:1" onclick="closeEvictModal()">Batal</button>
+      <button class="btn-danger" style="flex:2;padding:12px" onclick="doEvict()">Ya, Lepas Penyewa</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPT -->
+<script type="module" src="kosku.js"></script>
+</body>
+</html>
