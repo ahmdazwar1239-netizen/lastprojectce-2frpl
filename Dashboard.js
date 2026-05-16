@@ -16,13 +16,14 @@ import {
 // ① FIREBASE CONFIG — GANTI DENGAN MILIK LO
 // ══════════════════════════════════════════════════
 const firebaseConfig = {
-    apiKey:            "GANTI_API_KEY",
-    authDomain:        "GANTI_PROJECT.firebaseapp.com",
-    databaseURL:       "https://GANTI_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId:         "GANTI_PROJECT",
-    storageBucket:     "GANTI_PROJECT.appspot.com",
-    messagingSenderId: "GANTI_SENDER_ID",
-    appId:             "GANTI_APP_ID"
+    apiKey:            "AIzaSyAdZmcPxMvIVWLpDTHkE4FRtCmWWm1Ynso",
+    authDomain:        "lastprojectce-2frpl.firebaseapp.com",
+    databaseURL:       "https://lastprojectce-2frpl-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "lastprojectce-2frpl",
+    storageBucket:     "lastprojectce-2frpl.firebasestorage.app",
+    messagingSenderId: "244081997580",
+    appId:             "1:244081997580:web:966a9232c6d0f074b87b29",
+    measurementId:     "G-48G1Q1PCHE"
 };
 
 const app  = initializeApp(firebaseConfig);
@@ -846,6 +847,289 @@ document.addEventListener('keydown', e => {
 });
 
 // ══════════════════════════════════════════════════
-// ⑫ SHORTHAND UTIL
+// ⑫ FITUR BARU: VALIDASI GENDER KAMAR (⑤)
+// ══════════════════════════════════════════════════
+
+// Ambil gender penyewa dari data akun (dari email / nama)
+// Kita simpan gender saat register → field 'gender' di DB
+// Tapi karena register lama belum ada field gender,
+// kita validasi di assign: kamar A = pria, kamar B = wanita
+// Admin harus isi gender penyewa saat assign jika belum ada
+
+function getRoomGender(roomId) {
+    return roomId?.startsWith('A') ? 'male' : 'female';
+}
+
+// Override doAssign dengan validasi gender
+const _originalDoAssign = window.doAssign;
+window.doAssign = async () => {
+    const tenantUid = el('assign-tenant-select').value;
+    const roomId    = selectedRoomId;
+    const room      = roomsData[roomId];
+
+    if (!tenantUid || !room) { showAlert('assign-alert','err','⚠️ Pilih penyewa dulu!'); return; }
+
+    // ── VALIDASI GENDER ──────────────────────────────
+    const tenant      = usersData[tenantUid];
+    const roomGender  = getRoomGender(roomId);
+    const tenantGender= tenant?.gender; // 'male' / 'female' / undefined
+
+    if (tenantGender && tenantGender !== roomGender) {
+        const roomLabel   = roomGender   === 'male' ? '👨 Pria'   : '👩 Wanita';
+        const tenantLabel = tenantGender === 'male' ? '👨 Pria'   : '👩 Wanita';
+        showAlert('assign-alert','err',
+            `⚠️ Kamar ${roomId} adalah zona ${roomLabel}, tapi penyewa ini terdaftar sebagai ${tenantLabel}. Tidak bisa di-assign!`
+        );
+        return;
+    }
+
+    // Kalau gender belum diset, tampilkan warning tapi tetap lanjut
+    if (!tenantGender) {
+        showAlert('assign-alert','warn',
+            `⚠️ Gender penyewa belum diset. Pastikan kamar ${roomId} (${roomGender==='male'?'Pria':'Wanita'}) sesuai.`
+        );
+        // Beri waktu admin baca warning, lanjut 1.5 detik kemudian
+        await new Promise(r => setTimeout(r, 1500));
+    }
+
+    // ── LANJUT PROSES ASSIGN ────────────────────────
+    const type     = el('assign-type').value;
+    const startStr = el('assign-start').value;
+    const endStr   = el('assign-end').value;
+
+    if (!startStr) { showAlert('assign-alert','err','⚠️ Isi tanggal masuk!'); return; }
+    if (!endStr)   { showAlert('assign-alert','err','⚠️ Isi tanggal selesai!'); return; }
+
+    const startTs = new Date(startStr).getTime();
+    const endTs   = new Date(endStr).getTime();
+    if (endTs <= startTs) { showAlert('assign-alert','err','⚠️ Tanggal selesai harus setelah tanggal masuk!'); return; }
+
+    setLoading('assign-btn','assign-btn-txt','assign-spin', true);
+
+    try {
+        const price   = getPrice(type);
+        const updates = {};
+
+        updates[`rooms/${roomId}/status`]     = 'filled';
+        updates[`rooms/${roomId}/tenantUid`]  = tenantUid;
+        updates[`rooms/${roomId}/tenantName`] = tenant?.name || '';
+
+        updates[`users/${tenantUid}/roomId`]    = roomId;
+        updates[`users/${tenantUid}/rentType`]  = type;
+        updates[`users/${tenantUid}/startDate`] = startTs;
+        updates[`users/${tenantUid}/endDate`]   = endTs;
+        updates[`users/${tenantUid}/price`]     = price;
+        updates[`users/${tenantUid}/payStatus`] = 'pending';
+        updates[`users/${tenantUid}/fineAmount`]= 0;
+
+        // ── CATAT RIWAYAT ASSIGN ──
+        const histKey = `paymentHistory/${tenantUid}/${Date.now()}`;
+        updates[histKey] = {
+            type:      'assign',
+            roomId,
+            rentType:  type,
+            price,
+            startDate: startTs,
+            endDate:   endTs,
+            adminNote: `Check-in oleh Admin`,
+            timestamp: Date.now()
+        };
+
+        await update(ref(db), updates);
+        showToast('ok', `✅ ${tenant?.name} berhasil di-assign ke ${roomId}`);
+        window.closeAssignModal();
+    } catch(e) {
+        showAlert('assign-alert','err', `⚠️ Gagal: ${e.message}`);
+    } finally {
+        setLoading('assign-btn','assign-btn-txt','assign-spin', false);
+    }
+};
+
+// ══════════════════════════════════════════════════
+// ⑬ FITUR BARU: RIWAYAT PEMBAYARAN (②)
+// ══════════════════════════════════════════════════
+
+// Tambah log ke riwayat setiap kali konfirmasi lunas / denda / evict
+async function addPaymentLog(tenantUid, type, note, extra = {}) {
+    const logRef = ref(db, `paymentHistory/${tenantUid}/${Date.now()}`);
+    await set(logRef, {
+        type,
+        note,
+        timestamp: Date.now(),
+        ...extra
+    });
+}
+
+// Override confirmPayment dengan logging
+window.confirmPayment = async uid => {
+    try {
+        const u     = usersData[uid];
+        const fine  = calcFine(u);
+        const total = (u?.price || 0) + fine;
+
+        await update(ref(db,`users/${uid}`), { payStatus:'lunas', fineAmount:0 });
+
+        // Catat riwayat
+        await addPaymentLog(uid, 'lunas', `Pembayaran dikonfirmasi lunas oleh Admin`, {
+            roomId:    u?.roomId,
+            amount:    u?.price || 0,
+            fine,
+            total,
+            period:    `${fmtDate(u?.startDate)} → ${fmtDate(u?.endDate)}`
+        });
+
+        showToast('ok', '✅ Pembayaran dikonfirmasi lunas!');
+    } catch(e) { showToast('err','❌ Gagal konfirmasi.'); }
+};
+
+// Override resetPayment dengan logging
+window.resetPayment = async uid => {
+    try {
+        const u = usersData[uid];
+        await update(ref(db,`users/${uid}`), { payStatus:'pending' });
+        await addPaymentLog(uid, 'reset', `Status pembayaran di-reset ke pending oleh Admin`, {
+            roomId: u?.roomId
+        });
+        showToast('ok', '🔄 Status reset ke pending.');
+    } catch(e) { showToast('err','❌ Gagal reset.'); }
+};
+
+// Override doEvict dengan logging
+const _origEvict = window.doEvict;
+window.doEvict = async () => {
+    const room      = roomsData[selectedRoomId]; if (!room) return;
+    const tenantEntry = Object.entries(usersData).find(([,u])=>u.roomId===selectedRoomId);
+    if (!tenantEntry) { window.closeEvictModal(); return; }
+
+    const [tenantUid, tenant] = tenantEntry;
+    try {
+        const updates = {};
+        updates[`rooms/${selectedRoomId}/status`]     = 'empty';
+        updates[`rooms/${selectedRoomId}/tenantUid`]  = null;
+        updates[`rooms/${selectedRoomId}/tenantName`] = null;
+        updates[`users/${tenantUid}/roomId`]          = null;
+        updates[`users/${tenantUid}/rentType`]        = null;
+        updates[`users/${tenantUid}/startDate`]       = null;
+        updates[`users/${tenantUid}/endDate`]         = null;
+        updates[`users/${tenantUid}/price`]           = null;
+        updates[`users/${tenantUid}/payStatus`]       = 'belum';
+        updates[`users/${tenantUid}/fineAmount`]      = 0;
+
+        // Catat riwayat check-out
+        const histKey = `paymentHistory/${tenantUid}/${Date.now()}`;
+        updates[histKey] = {
+            type:      'checkout',
+            roomId:    selectedRoomId,
+            note:      `Check-out dari ${selectedRoomId} oleh Admin`,
+            timestamp: Date.now()
+        };
+
+        await update(ref(db), updates);
+        showToast('ok', `✅ Penyewa berhasil dilepas dari ${selectedRoomId}`);
+        window.closeEvictModal();
+    } catch(e) {
+        showToast('err', `❌ Gagal: ${e.message}`);
+    }
+};
+
+// Render riwayat pembayaran di panel admin (tenants)
+window.showPaymentHistory = async uid => {
+    const u    = usersData[uid];
+    const snap = await get(ref(db, `paymentHistory/${uid}`));
+    const logs = snap.exists() ? Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp) : [];
+
+    // Tampilkan di modal history
+    const modal = el('history-modal');
+    el('history-modal-name').innerText = u?.name || '---';
+
+    el('history-list').innerHTML = logs.length
+        ? logs.map(log => {
+            const typeMap = {
+                lunas:    { icon:'✅', label:'Lunas',      color:'var(--green)'  },
+                reset:    { icon:'🔄', label:'Reset',      color:'var(--yellow)' },
+                assign:   { icon:'🏠', label:'Check-in',   color:'var(--accent)' },
+                checkout: { icon:'🚪', label:'Check-out',  color:'var(--muted)'  },
+                denda:    { icon:'⚠️', label:'Denda',      color:'var(--red)'    },
+            };
+            const t = typeMap[log.type] || { icon:'📋', label:log.type, color:'var(--text)' };
+            return `<div style="display:flex;gap:12px;align-items:flex-start;padding:14px;background:var(--surface2);border-radius:14px;border:1px solid var(--border)">
+                <div style="font-size:1.4rem;flex-shrink:0">${t.icon}</div>
+                <div style="flex:1">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                        <span style="font-weight:800;color:${t.color}">${t.label}</span>
+                        <span style="font-size:.68rem;color:var(--muted)">${fmtDate(log.timestamp)}</span>
+                    </div>
+                    <div style="font-size:.78rem;color:var(--muted)">${log.note || ''}</div>
+                    ${log.roomId   ? `<div style="font-size:.7rem;margin-top:4px"><span class="badge badge-orange">${log.roomId}</span></div>` : ''}
+                    ${log.total    ? `<div style="font-size:.75rem;color:var(--text);margin-top:4px">Total: <strong>${fmtRp(log.total)}</strong>${log.fine>0?` (termasuk denda ${fmtRp(log.fine)})`:''}` : ''}
+                    ${log.period   ? `<div style="font-size:.7rem;color:var(--muted);margin-top:2px">Periode: ${log.period}</div>` : ''}
+                </div>
+            </div>`;
+        }).join('')
+        : `<div style="text-align:center;padding:32px;color:var(--muted)">Belum ada riwayat pembayaran.</div>`;
+
+    modal.classList.add('show');
+};
+
+window.closeHistoryModal = () => el('history-modal').classList.remove('show');
+el('history-modal')?.addEventListener('click', e => { if(e.target===el('history-modal')) window.closeHistoryModal(); });
+
+// ══════════════════════════════════════════════════
+// ⑭ FITUR BARU: NOTIF BANNER DENDA (①)
+// ══════════════════════════════════════════════════
+
+function showFineNotif(tenant) {
+    const banner = el('fine-banner');
+    if (!banner) return;
+
+    const fine      = calcFine(tenant);
+    const remaining = tenant.endDate ? daysBetween(Date.now(), tenant.endDate) : null;
+
+    if (fine > 0) {
+        // Ada denda
+        el('fine-banner-icon').innerText = '🚨';
+        el('fine-banner-msg').innerHTML  =
+            `Kamu memiliki <strong>denda ${fmtRp(fine)}</strong> karena terlambat bayar. Segera hubungi admin!`;
+        banner.className = 'fine-banner danger';
+        banner.style.display = 'flex';
+    } else if (remaining !== null && remaining <= 7 && remaining >= 0) {
+        // Mau jatuh tempo
+        el('fine-banner-icon').innerText = '⏰';
+        el('fine-banner-msg').innerHTML  =
+            `Sewa lo akan berakhir dalam <strong>${remaining} hari</strong> (${fmtDate(tenant.endDate)}). Segera perpanjang!`;
+        banner.className = 'fine-banner warn';
+        banner.style.display = 'flex';
+    } else if (remaining !== null && remaining < 0 && fine === 0) {
+        // Lewat jatuh tempo tapi masih grace period
+        el('fine-banner-icon').innerText = '⚠️';
+        el('fine-banner-msg').innerHTML  =
+            `Masa sewa lo sudah berakhir. Denda akan berlaku dalam <strong>${LATE_GRACE_DAYS - Math.abs(remaining)} hari</strong> lagi.`;
+        banner.className = 'fine-banner warn';
+        banner.style.display = 'flex';
+    } else {
+        banner.style.display = 'none';
+    }
+}
+
+// Patch startTenantListeners biar panggil showFineNotif juga
+const _origStartTenant = startTenantListeners;
+function startTenantListeners(uid) {
+    onValue(ref(db,`users/${uid}`), snap => {
+        if (!snap.exists()) return;
+        const u = snap.val();
+        renderTenantStatus(u);
+        renderTenantBilling(u);
+        // Tampilkan banner notif denda
+        if (u.roomId) showFineNotif(u);
+        else { const b=el('fine-banner'); if(b) b.style.display='none'; }
+    });
+    onValue(ref(db,'rooms'), snap => {
+        if (!snap.exists()) return;
+        renderTenantKosInfo(snap.val());
+    });
+}
+
+// ══════════════════════════════════════════════════
+// ⑮ SHORTHAND UTIL
 // ══════════════════════════════════════════════════
 function el(id) { return document.getElementById(id); }
