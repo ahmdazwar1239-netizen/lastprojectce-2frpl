@@ -18,7 +18,7 @@ import {
 const firebaseConfig = {
     apiKey:            "AIzaSyAdZmcPxMvIVWLpDTHkE4FRtCmWWm1Ynso",
     authDomain:        "lastprojectce-2frpl.firebaseapp.com",
-    databaseURL:       "https://lastprojectce-2frpl-default-rtdb.firebaseio.com/",
+    databaseURL:       "https://lastprojectce-2frpl-default-rtdb.firebaseio.com",
     projectId:         "lastprojectce-2frpl",
     storageBucket:     "lastprojectce-2frpl.firebasestorage.app",
     messagingSenderId: "244081997580",
