@@ -357,6 +357,15 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .status-room{font-family:'Syne',sans-serif;font-size:2rem;font-weight:900;color:var(--accent);}
 .status-detail{color:var(--muted);font-size:.85rem;margin-top:6px;}
 
+/* Fine Banner (tenant) */
+.fine-banner{display:none;align-items:center;gap:14px;padding:16px 20px;
+  border-radius:16px;margin-bottom:20px;font-size:.85rem;font-weight:700;
+  animation:slideDown .4s ease;}
+.fine-banner.danger{background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.4);color:#fca5a5;}
+.fine-banner.warn{background:rgba(234,179,8,.08);border:2px solid rgba(234,179,8,.35);color:#fde047;}
+.fine-banner-icon{font-size:1.8rem;flex-shrink:0;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
 /* Responsive */
 @media(max-width:768px){
   .hero{flex-direction:column;padding:90px 20px 40px;}
@@ -420,13 +429,13 @@ tr:hover td{background:rgba(255,255,255,.02);}
         </div>
         <!-- Preview room grid (dekoratif, 8 kamar sampel) -->
         <div class="room-grid" id="preview-rooms">
-          <div class="room-item empty"><div class="room-num">A01</div><div class="room-status">Kosong</div></div>
-          <div class="room-item empty"><div class="room-num">A02</div><div class="room-status">Kosong</div></div>
+          <div class="room-item filled"><div class="room-num">A01</div><div class="room-status">Terisi</div></div>
+          <div class="room-item filled"><div class="room-num">A02</div><div class="room-status">Terisi</div></div>
           <div class="room-item empty"><div class="room-num">A03</div><div class="room-status">Kosong</div></div>
           <div class="room-item empty"><div class="room-num">A04</div><div class="room-status">Kosong</div></div>
-          <div class="room-item empty"><div class="room-num">B01</div><div class="room-status">Kosong</div></div>
+          <div class="room-item filled"><div class="room-num">B01</div><div class="room-status">Terisi</div></div>
           <div class="room-item empty"><div class="room-num">B02</div><div class="room-status">Kosong</div></div>
-          <div class="room-item empty"><div class="room-num">B03</div><div class="room-status">Kosong</div></div>
+          <div class="room-item filled"><div class="room-num">B03</div><div class="room-status">Terisi</div></div>
           <div class="room-item empty"><div class="room-num">B04</div><div class="room-status">Kosong</div></div>
         </div>
         <div class="stat-row">
@@ -477,7 +486,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   </section>
 
   <footer class="landing-footer">
-    Manajemen Kos No. 1 &nbsp;·&nbsp; <strong>KosKu</strong> &nbsp;·&nbsp; Powered by Firebase
+    Dibuat dengan ❤️ buat proyek akhir &nbsp;·&nbsp; <strong>KosKu</strong> &nbsp;·&nbsp; Powered by Firebase
   </footer>
 </div><!-- /page-landing -->
 
@@ -706,6 +715,12 @@ tr:hover td{background:rgba(255,255,255,.02);}
 
       <!-- STATUS -->
       <div class="panel active" id="tpanel-status">
+        <!-- BANNER NOTIF DENDA -->
+        <div class="fine-banner" id="fine-banner" style="display:none">
+          <div class="fine-banner-icon" id="fine-banner-icon">🚨</div>
+          <div style="flex:1" id="fine-banner-msg">Notifikasi denda</div>
+        </div>
+
         <div class="dash-header">
           <div class="dash-title">🏠 Status Kamar Gue</div>
           <div class="dash-subtitle">Info sewa & kamar lo</div>
