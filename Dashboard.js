@@ -18,7 +18,7 @@ import {
 const firebaseConfig = {
     apiKey:            "AIzaSyAdZmcPxMvIVWLpDTHkE4FRtCmWWm1Ynso",
     authDomain:        "lastprojectce-2frpl.firebaseapp.com",
-    databaseURL:       "https://lastprojectce-2frpl-default-rtdb.firebaseio.com/",
+    databaseURL:       "https://lastprojectce-2frpl-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId:         "lastprojectce-2frpl",
     storageBucket:     "lastprojectce-2frpl.firebasestorage.app",
     messagingSenderId: "244081997580",
@@ -223,21 +223,17 @@ function startLandingListener() {
 // ══════════════════════════════════════════════════
 // ⑧ AUTH MODAL
 // ══════════════════════════════════════════════════
-window.openAuth = (tab='login') => {
+function openAuth(tab='login') {
     document.getElementById('auth-modal').classList.add('show');
     document.body.style.overflow = 'hidden';
     switchAuthTab(tab);
     clearAlert('auth-alert');
-};
-window.closeAuth = () => {
+}
+function closeAuth() {
     document.getElementById('auth-modal').classList.remove('show');
     document.body.style.overflow = '';
-};
-document.getElementById('auth-modal').addEventListener('click', e => {
-    if (e.target === document.getElementById('auth-modal')) window.closeAuth();
-});
-
-window.switchAuthTab = tab => {
+}
+function switchAuthTab(tab) {
     const isLogin = tab === 'login';
     el('auth-form-login').style.display    = isLogin ? 'block' : 'none';
     el('auth-form-register').style.display = isLogin ? 'none'  : 'block';
@@ -245,12 +241,17 @@ window.switchAuthTab = tab => {
     el('atab-register').classList.toggle('active', !isLogin);
     el('auth-subtitle').innerText = isLogin ? 'Masuk ke akun lo 👋' : 'Daftar sebagai penyewa 🏠';
     clearAlert('auth-alert');
-};
-
-window.detectAdmin = val => {
+}
+function detectAdmin(val) {
     const isAdmin = ADMIN_ACCOUNTS.some(a => a.username.toLowerCase() === val.toLowerCase());
     el('admin-hint').style.display = isAdmin ? 'block' : 'none';
-};
+}
+
+// Expose ke global
+window.openAuth      = openAuth;
+window.closeAuth     = closeAuth;
+window.switchAuthTab = switchAuthTab;
+window.detectAdmin   = detectAdmin;
 
 window.handleLogin = async () => {
     const identifier = el('l-id').value.trim();
@@ -286,6 +287,13 @@ window.handleLogin = async () => {
         setLoading('l-btn','l-btn-txt','l-spin', false);
     }
 };
+
+// Event listener untuk close modal saat klik overlay
+setTimeout(() => {
+    document.getElementById('auth-modal')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('auth-modal')) closeAuth();
+    });
+}, 100);
 
 window.handleRegister = async () => {
     const name = el('r-name').value.trim();
@@ -1133,4 +1141,3 @@ function startTenantListeners(uid) {
 // ⑮ SHORTHAND UTIL
 // ══════════════════════════════════════════════════
 function el(id) { return document.getElementById(id); }
-window.openAuth   = openAuth;
