@@ -18,7 +18,7 @@ import {
 const firebaseConfig = {
     apiKey:            "AIzaSyAdZmcPxMvIVWLpDTHkE4FRtCmWWm1Ynso",
     authDomain:        "lastprojectce-2frpl.firebaseapp.com",
-    databaseURL:       "https://lastprojectce-2frpl-default-rtdb.firebaseio.com/",
+    databaseURL:       "https://lastprojectce-2frpl-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId:         "lastprojectce-2frpl",
     storageBucket:     "lastprojectce-2frpl.firebasestorage.app",
     messagingSenderId: "244081997580",
@@ -181,7 +181,9 @@ onAuthStateChanged(auth, async user => {
     const userData = snap.val();
     currentRole = userData.role;
 
-    await seedRooms();
+    // seedRooms only if rooms node is completely missing (first ever run)
+    // Run in background — don't await, so it never blocks login
+    get(ref(db, 'rooms/A01')).then(s => { if (!s.exists()) seedRooms(); });
 
     if (currentRole === 'admin') {
         el('admin-uname').innerText = userData.name || userData.username;
