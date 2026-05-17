@@ -1,5 +1,5 @@
 // ============================================================
-// kosku.js — All-in-one logic untuk KosKu
+// Dashboard.js — All-in-one logic untuk KosKu
 // Firebase Auth + Realtime Database
 // ============================================================
 
@@ -13,7 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // ══════════════════════════════════════════════════
-// ① FIREBASE CONFIG — GANTI DENGAN MILIK LO
+// ① FIREBASE CONFIG
 // ══════════════════════════════════════════════════
 const firebaseConfig = {
     apiKey:            "AIzaSyAdZmcPxMvIVWLpDTHkE4FRtCmWWm1Ynso",
@@ -60,6 +60,8 @@ const FINE_RATE       = 0.05;
 // ══════════════════════════════════════════════════
 // ③ HELPERS
 // ══════════════════════════════════════════════════
+function el(id) { return document.getElementById(id); }
+
 const fmtRp   = n => 'Rp ' + Number(n).toLocaleString('id-ID');
 const fmtDate = ts => ts ? new Date(ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '—';
 const daysBetween = (a,b) => Math.floor((b-a)/86400000);
@@ -78,33 +80,33 @@ function getPrice(type) {
 }
 
 function showToast(type, msg) {
-    const el   = document.getElementById('toast');
-    const icon = document.getElementById('toast-icon');
-    const txt  = document.getElementById('toast-msg');
-    el.className = `toast t-${type}`;
+    const elT  = el('toast');
+    const icon = el('toast-icon');
+    const txt  = el('toast-msg');
+    elT.className = `toast t-${type}`;
     icon.innerText = type === 'ok' ? '✅' : '❌';
     txt.innerText  = msg;
-    el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 3500);
+    elT.classList.add('show');
+    setTimeout(() => elT.classList.remove('show'), 3500);
 }
 
 function showAlert(id, type, msg) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.className = `alert-box ${type}`;
-    el.innerText = msg;
+    const elA = el(id);
+    if (!elA) return;
+    elA.className = `alert-box ${type}`;
+    elA.innerText = msg;
 }
 function clearAlert(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.className = 'alert-box';
-    el.innerText = '';
+    const elA = el(id);
+    if (!elA) return;
+    elA.className = 'alert-box';
+    elA.innerText = '';
 }
 
 function setLoading(btnId, txtId, spinId, loading) {
-    const btn  = document.getElementById(btnId);
-    const txt  = document.getElementById(txtId);
-    const spin = document.getElementById(spinId);
+    const btn  = el(btnId);
+    const txt  = el(txtId);
+    const spin = el(spinId);
     if (btn)  btn.disabled       = loading;
     if (txt)  txt.style.display  = loading ? 'none'  : 'inline';
     if (spin) spin.style.display = loading ? 'block' : 'none';
@@ -115,7 +117,7 @@ function setLoading(btnId, txtId, spinId, loading) {
 // ══════════════════════════════════════════════════
 function showPage(id) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(id)?.classList.add('active');
+    el(id)?.classList.add('active');
 }
 
 // ══════════════════════════════════════════════════
@@ -153,18 +155,20 @@ async function seedAdmins() {
     alert('Semua admin berhasil dibuat!');
 }
 
-// Expose ke console browser
 window.seedAdmins = seedAdmins;
 window.seedRooms  = seedRooms;
 
 // ══════════════════════════════════════════════════
-// ⑥ AUTH STATE — deteksi login & arahkan ke page
+// ⑥ STATE
 // ══════════════════════════════════════════════════
 let currentUser = null;
 let currentRole = null;
 let roomsData   = {};
 let usersData   = {};
 
+// ══════════════════════════════════════════════════
+// ⑦ AUTH STATE
+// ══════════════════════════════════════════════════
 onAuthStateChanged(auth, async user => {
     if (!user) {
         showPage('page-landing');
@@ -177,15 +181,15 @@ onAuthStateChanged(auth, async user => {
     const userData = snap.val();
     currentRole = userData.role;
 
-    await seedRooms(); // pastikan 20 kamar ada
+    await seedRooms();
 
     if (currentRole === 'admin') {
-        document.getElementById('admin-uname').innerText = userData.name || userData.username;
+        el('admin-uname').innerText = userData.name || userData.username;
         showPage('page-admin');
         startAdminListeners();
         adminPanel('overview');
     } else {
-        document.getElementById('tenant-uname').innerText = userData.name || userData.username;
+        el('tenant-uname').innerText = userData.name || userData.username;
         showPage('page-tenant');
         startTenantListeners(user.uid);
         tenantPanel('status');
@@ -194,7 +198,7 @@ onAuthStateChanged(auth, async user => {
 });
 
 // ══════════════════════════════════════════════════
-// ⑦ LANDING — live stats listener
+// ⑧ LANDING — live stats listener
 // ══════════════════════════════════════════════════
 function startLandingListener() {
     onValue(ref(db,'rooms'), snap => {
@@ -204,16 +208,14 @@ function startLandingListener() {
         const empty  = rooms.length - filled;
         const pct    = Math.round((filled / rooms.length) * 100);
 
-        // Stat bar
         el('ls-filled').innerText = filled;
         el('ls-empty').innerText  = empty;
-        // male/female available
+
         const maleAvail   = rooms.filter(r => r.gender==='male'   && r.status==='empty').length;
         const femaleAvail = rooms.filter(r => r.gender==='female' && r.status==='empty').length;
         el('ls-male').innerText   = maleAvail;
         el('ls-female').innerText = femaleAvail;
 
-        // Preview card
         el('prev-filled').innerText = filled;
         el('prev-empty').innerText  = empty;
         el('prev-pct').innerText    = pct + '%';
@@ -221,16 +223,16 @@ function startLandingListener() {
 }
 
 // ══════════════════════════════════════════════════
-// ⑧ AUTH MODAL
+// ⑨ AUTH MODAL
 // ══════════════════════════════════════════════════
-function openAuth(tab='login') {
-    document.getElementById('auth-modal').classList.add('show');
+function openAuth(tab = 'login') {
+    el('auth-modal').classList.add('show');
     document.body.style.overflow = 'hidden';
     switchAuthTab(tab);
     clearAlert('auth-alert');
 }
 function closeAuth() {
-    document.getElementById('auth-modal').classList.remove('show');
+    el('auth-modal').classList.remove('show');
     document.body.style.overflow = '';
 }
 function switchAuthTab(tab) {
@@ -247,7 +249,7 @@ function detectAdmin(val) {
     el('admin-hint').style.display = isAdmin ? 'block' : 'none';
 }
 
-// Expose ke global
+// ── Expose auth functions to window (required for onclick in HTML with type="module") ──
 window.openAuth      = openAuth;
 window.closeAuth     = closeAuth;
 window.switchAuthTab = switchAuthTab;
@@ -272,7 +274,11 @@ window.handleLogin = async () => {
             if (snap.exists()) {
                 const found = Object.values(snap.val()).find(u => u.username === identifier.toLowerCase() && u.role === 'tenant');
                 if (found) email = found.email;
-                else { showAlert('auth-alert','err','⚠️ Username tidak ditemukan!'); setLoading('l-btn','l-btn-txt','l-spin',false); return; }
+                else {
+                    showAlert('auth-alert','err','⚠️ Username tidak ditemukan!');
+                    setLoading('l-btn','l-btn-txt','l-spin',false);
+                    return;
+                }
             }
         }
         await signInWithEmailAndPassword(auth, email, pw);
@@ -288,13 +294,6 @@ window.handleLogin = async () => {
     }
 };
 
-// Event listener untuk close modal saat klik overlay
-setTimeout(() => {
-    document.getElementById('auth-modal')?.addEventListener('click', e => {
-        if (e.target === document.getElementById('auth-modal')) closeAuth();
-    });
-}, 100);
-
 window.handleRegister = async () => {
     const name = el('r-name').value.trim();
     const user = el('r-user').value.trim().toLowerCase();
@@ -309,11 +308,11 @@ window.handleRegister = async () => {
     clearAlert('auth-alert');
 
     try {
-        // Cek username unik
         const snap = await get(ref(db,'users'));
         if (snap.exists() && Object.values(snap.val()).some(u => u.username === user)) {
             showAlert('auth-alert','err','⚠️ Username sudah dipakai!');
-            setLoading('r-btn','r-btn-txt','r-spin',false); return;
+            setLoading('r-btn','r-btn-txt','r-spin',false);
+            return;
         }
 
         const cred = await createUserWithEmailAndPassword(auth, email, pw);
@@ -359,17 +358,22 @@ window.doLogout = async () => {
     showToast('ok','👋 Berhasil keluar.');
 };
 
+// Close modal on overlay click
+setTimeout(() => {
+    el('auth-modal')?.addEventListener('click', e => {
+        if (e.target === el('auth-modal')) closeAuth();
+    });
+}, 100);
+
 // ══════════════════════════════════════════════════
-// ⑨ ADMIN — LISTENERS & PANELS
+// ⑩ ADMIN — LISTENERS & PANELS
 // ══════════════════════════════════════════════════
 function startAdminListeners() {
-    // Real-time rooms
     onValue(ref(db,'rooms'), snap => {
         roomsData = snap.exists() ? snap.val() : {};
         renderAdminRooms();
         renderOverview();
     });
-    // Real-time users
     onValue(ref(db,'users'), snap => {
         usersData = snap.exists() ? snap.val() : {};
         renderTenants();
@@ -398,7 +402,6 @@ function renderOverview() {
     el('ov-occ-label').innerText = `${filled} dari ${rooms.length} kamar terisi`;
     el('ov-occ-bar').style.width = rooms.length ? `${Math.round(filled/rooms.length*100)}%` : '0%';
 
-    // Mini room grids
     const maleRooms   = rooms.filter(r => r.gender==='male');
     const femaleRooms = rooms.filter(r => r.gender==='female');
     el('ov-male-rooms').innerHTML   = maleRooms.map(r => miniRoomCard(r)).join('');
@@ -418,15 +421,15 @@ function miniRoomCard(r) {
     </div>`;
 }
 
-// ── ROOMS GRID (full) ──
+// ── ROOMS GRID ──
 let roomFilter = 'all';
 window.filterRooms = f => {
     roomFilter = f;
     ['all','male','female','empty'].forEach(x => {
         const btn = el(`rf-${x}`);
-        if (btn) btn.className = f===x ? 'btn-primary' : 'btn-secondary';
-        if (btn && f!==x) btn.style.cssText = 'font-size:.78rem;padding:8px 16px';
-        if (btn && f===x) btn.style.cssText = 'font-size:.78rem;padding:8px 16px';
+        if (!btn) return;
+        btn.className = f===x ? 'btn-primary' : 'btn-secondary';
+        btn.style.cssText = 'font-size:.78rem;padding:8px 16px';
     });
     renderAdminRooms();
 };
@@ -455,17 +458,14 @@ function renderAdminRooms() {
     }).join('');
 }
 
-// ── OPEN ROOM MODAL ──
+// ── ROOM MODAL ──
 let selectedRoomId = null;
 
 window.openRoomModal = roomId => {
     const room = roomsData[roomId]; if (!room) return;
     selectedRoomId = roomId;
-    if (room.status === 'empty') {
-        openAssignModal(roomId);
-    } else {
-        openEvictModal(roomId);
-    }
+    if (room.status === 'empty') openAssignModal(roomId);
+    else openEvictModal(roomId);
 };
 
 // ── ASSIGN MODAL ──
@@ -474,7 +474,6 @@ window.openAssignModal = async roomId => {
     el('assign-room-label').innerText = `${room.label} (${room.genderLabel})`;
     clearAlert('assign-alert');
 
-    // Populate penyewa yang belum punya kamar
     const freeTenants = Object.entries(usersData)
         .filter(([,u]) => u.role==='tenant' && !u.roomId)
         .map(([uid,u]) => `<option value="${uid}">${u.name} (@${u.username})</option>`)
@@ -484,11 +483,9 @@ window.openAssignModal = async roomId => {
         ? `<option value="">-- Pilih Penyewa --</option>${freeTenants}`
         : `<option value="">Tidak ada penyewa tersedia</option>`;
 
-    // Set default dates
     const today = new Date();
     const yyyy  = today.getFullYear(), mm = String(today.getMonth()+1).padStart(2,'0'), dd = String(today.getDate()).padStart(2,'0');
     el('assign-start').value = `${yyyy}-${mm}-${dd}`;
-    // Default end: +1 bulan
     const end = new Date(today); end.setMonth(end.getMonth()+1);
     const ey  = end.getFullYear(), em = String(end.getMonth()+1).padStart(2,'0'), ed = String(end.getDate()).padStart(2,'0');
     el('assign-end').value = `${ey}-${em}-${ed}`;
@@ -504,16 +501,45 @@ window.updateAssignPrice = () => {
     el('assign-price-display').innerText = fmtRp(getPrice(type));
 };
 
-window.doAssign = async () => {
-    const tenantUid  = el('assign-tenant-select').value;
-    const type       = el('assign-type').value;
-    const startStr   = el('assign-start').value;
-    const endStr     = el('assign-end').value;
-    const room       = roomsData[selectedRoomId];
+function getRoomGender(roomId) {
+    return roomId?.startsWith('A') ? 'male' : 'female';
+}
 
-    if (!tenantUid)  { showAlert('assign-alert','err','⚠️ Pilih penyewa dulu!'); return; }
-    if (!startStr)   { showAlert('assign-alert','err','⚠️ Isi tanggal masuk!'); return; }
-    if (!endStr)     { showAlert('assign-alert','err','⚠️ Isi tanggal selesai!'); return; }
+window.doAssign = async () => {
+    const tenantUid = el('assign-tenant-select').value;
+    const roomId    = selectedRoomId;
+    const room      = roomsData[roomId];
+
+    if (!tenantUid) { showAlert('assign-alert','err','⚠️ Pilih penyewa dulu!'); return; }
+    if (!room)      { showAlert('assign-alert','err','⚠️ Kamar tidak valid!'); return; }
+
+    // Validasi gender
+    const tenant      = usersData[tenantUid];
+    const roomGender  = getRoomGender(roomId);
+    const tenantGender= tenant?.gender;
+
+    if (tenantGender && tenantGender !== roomGender) {
+        const roomLabel   = roomGender   === 'male' ? '👨 Pria' : '👩 Wanita';
+        const tenantLabel = tenantGender === 'male' ? '👨 Pria' : '👩 Wanita';
+        showAlert('assign-alert','err',
+            `⚠️ Kamar ${roomId} adalah zona ${roomLabel}, tapi penyewa ini terdaftar sebagai ${tenantLabel}. Tidak bisa di-assign!`
+        );
+        return;
+    }
+
+    if (!tenantGender) {
+        showAlert('assign-alert','warn',
+            `⚠️ Gender penyewa belum diset. Pastikan kamar ${roomId} (${roomGender==='male'?'Pria':'Wanita'}) sesuai.`
+        );
+        await new Promise(r => setTimeout(r, 1500));
+    }
+
+    const type     = el('assign-type').value;
+    const startStr = el('assign-start').value;
+    const endStr   = el('assign-end').value;
+
+    if (!startStr) { showAlert('assign-alert','err','⚠️ Isi tanggal masuk!'); return; }
+    if (!endStr)   { showAlert('assign-alert','err','⚠️ Isi tanggal selesai!'); return; }
 
     const startTs = new Date(startStr).getTime();
     const endTs   = new Date(endStr).getTime();
@@ -522,16 +548,14 @@ window.doAssign = async () => {
     setLoading('assign-btn','assign-btn-txt','assign-spin', true);
 
     try {
-        const price = getPrice(type);
+        const price   = getPrice(type);
         const updates = {};
 
-        // Update room
-        updates[`rooms/${selectedRoomId}/status`]     = 'filled';
-        updates[`rooms/${selectedRoomId}/tenantUid`]  = tenantUid;
-        updates[`rooms/${selectedRoomId}/tenantName`] = usersData[tenantUid]?.name || '';
+        updates[`rooms/${roomId}/status`]     = 'filled';
+        updates[`rooms/${roomId}/tenantUid`]  = tenantUid;
+        updates[`rooms/${roomId}/tenantName`] = tenant?.name || '';
 
-        // Update user
-        updates[`users/${tenantUid}/roomId`]    = selectedRoomId;
+        updates[`users/${tenantUid}/roomId`]    = roomId;
         updates[`users/${tenantUid}/rentType`]  = type;
         updates[`users/${tenantUid}/startDate`] = startTs;
         updates[`users/${tenantUid}/endDate`]   = endTs;
@@ -539,8 +563,15 @@ window.doAssign = async () => {
         updates[`users/${tenantUid}/payStatus`] = 'pending';
         updates[`users/${tenantUid}/fineAmount`]= 0;
 
+        const histKey = `paymentHistory/${tenantUid}/${Date.now()}`;
+        updates[histKey] = {
+            type:'assign', roomId, rentType:type, price,
+            startDate:startTs, endDate:endTs,
+            adminNote:`Check-in oleh Admin`, timestamp:Date.now()
+        };
+
         await update(ref(db), updates);
-        showToast('ok', `✅ ${usersData[tenantUid]?.name} berhasil di-assign ke ${selectedRoomId}`);
+        showToast('ok', `✅ ${tenant?.name} berhasil di-assign ke ${roomId}`);
         window.closeAssignModal();
     } catch(e) {
         showAlert('assign-alert','err', `⚠️ Gagal: ${e.message}`);
@@ -551,23 +582,21 @@ window.doAssign = async () => {
 
 // ── EVICT MODAL ──
 window.openEvictModal = roomId => {
-    const room   = roomsData[roomId]; if (!room) return;
+    const room = roomsData[roomId]; if (!room) return;
     selectedRoomId = roomId;
     const tenant = Object.values(usersData).find(u => u.roomId === roomId);
-    el('evict-room-label').innerText   = room.label;
-    el('evict-tenant-name').innerText  = tenant?.name || '---';
+    el('evict-room-label').innerText  = room.label;
+    el('evict-tenant-name').innerText = tenant?.name || '---';
     el('evict-modal').classList.add('show');
 };
 window.closeEvictModal = () => el('evict-modal').classList.remove('show');
 
 window.doEvict = async () => {
-    const room   = roomsData[selectedRoomId]; if (!room) return;
-    const tenant = Object.values(usersData).find(u => u.roomId === selectedRoomId);
-    if (!tenant) { window.closeEvictModal(); return; }
+    const room        = roomsData[selectedRoomId]; if (!room) return;
+    const tenantEntry = Object.entries(usersData).find(([,u])=>u.roomId===selectedRoomId);
+    if (!tenantEntry) { window.closeEvictModal(); return; }
 
-    const tenantUid = Object.entries(usersData).find(([,u])=>u.roomId===selectedRoomId)?.[0];
-    if (!tenantUid) return;
-
+    const [tenantUid, tenant] = tenantEntry;
     try {
         const updates = {};
         updates[`rooms/${selectedRoomId}/status`]     = 'empty';
@@ -580,6 +609,14 @@ window.doEvict = async () => {
         updates[`users/${tenantUid}/price`]           = null;
         updates[`users/${tenantUid}/payStatus`]       = 'belum';
         updates[`users/${tenantUid}/fineAmount`]      = 0;
+
+        const histKey = `paymentHistory/${tenantUid}/${Date.now()}`;
+        updates[histKey] = {
+            type:'checkout', roomId:selectedRoomId,
+            note:`Check-out dari ${selectedRoomId} oleh Admin`,
+            timestamp:Date.now()
+        };
+
         await update(ref(db), updates);
         showToast('ok', `✅ Penyewa berhasil dilepas dari ${selectedRoomId}`);
         window.closeEvictModal();
@@ -600,16 +637,13 @@ function renderTenants() {
 
     tbody.innerHTML = tenants.map(([uid,u]) => {
         const fine     = calcFine(u);
-        const remaining= u.endDate ? daysBetween(Date.now(), u.endDate) : null;
         const statusBadge = !u.roomId ? `<span class="badge badge-gray">Belum Check-in</span>`
             : u.payStatus==='lunas'   ? `<span class="badge badge-green">Lunas</span>`
             :                          `<span class="badge badge-yellow">Pending</span>`;
         const fineBadge = fine>0 ? `<span class="badge badge-red">${fmtRp(fine)}</span>` : `<span class="badge badge-gray">—</span>`;
         const roomBadge = u.roomId ? `<span class="badge badge-orange">${u.roomId}</span>` : `<span class="badge badge-gray">—</span>`;
-        const periode = u.startDate && u.endDate
-            ? `${fmtDate(u.startDate)} → ${fmtDate(u.endDate)}`
-            : '—';
-        const tipeSewa = u.rentType ? (u.rentType==='monthly'?'Bulanan':'Tahunan') : '—';
+        const periode   = u.startDate && u.endDate ? `${fmtDate(u.startDate)} → ${fmtDate(u.endDate)}` : '—';
+        const tipeSewa  = u.rentType ? (u.rentType==='monthly'?'Bulanan':'Tahunan') : '—';
 
         return `<tr>
             <td><strong>${u.name}</strong></td>
@@ -622,7 +656,7 @@ function renderTenants() {
             <td>
                 ${u.roomId && u.payStatus!=='lunas'
                     ? `<button class="btn-green" onclick="confirmPayment('${uid}')">✅ Lunas</button>`
-                    : ''}
+                    : u.roomId ? `<button class="btn-secondary" style="font-size:.72rem;padding:6px 12px" onclick="resetPayment('${uid}')">🔄 Reset</button>` : ''}
             </td>
         </tr>`;
     }).join('');
@@ -639,16 +673,14 @@ function renderPayments() {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">Belum ada penyewa aktif.</td></tr>`;
     } else {
         tbody.innerHTML = tenants.map(([uid,u]) => {
-            const fine   = calcFine(u);
-            const total  = (u.price||0) + fine;
-            totalFine   += fine;
+            const fine  = calcFine(u);
+            totalFine  += fine;
             if (u.payStatus==='lunas') lunas++; else pending++;
 
             const statusBadge = u.payStatus==='lunas'
                 ? `<span class="badge badge-green">Lunas</span>`
-                : fine>0
-                    ? `<span class="badge badge-red">Menunggak</span>`
-                    : `<span class="badge badge-yellow">Pending</span>`;
+                : fine>0 ? `<span class="badge badge-red">Menunggak</span>`
+                :           `<span class="badge badge-yellow">Pending</span>`;
 
             return `<tr>
                 <td><strong>${u.name}</strong></td>
@@ -671,32 +703,87 @@ function renderPayments() {
     el('pay-denda').innerText  = fmtRp(totalFine);
 }
 
+async function addPaymentLog(tenantUid, type, note, extra = {}) {
+    const logRef = ref(db, `paymentHistory/${tenantUid}/${Date.now()}`);
+    await set(logRef, { type, note, timestamp:Date.now(), ...extra });
+}
+
 window.confirmPayment = async uid => {
     try {
+        const u    = usersData[uid];
+        const fine = calcFine(u);
+        const total= (u?.price||0) + fine;
         await update(ref(db,`users/${uid}`), { payStatus:'lunas', fineAmount:0 });
+        await addPaymentLog(uid, 'lunas', `Pembayaran dikonfirmasi lunas oleh Admin`, {
+            roomId:u?.roomId, amount:u?.price||0, fine, total,
+            period:`${fmtDate(u?.startDate)} → ${fmtDate(u?.endDate)}`
+        });
         showToast('ok', '✅ Pembayaran dikonfirmasi lunas!');
     } catch(e) { showToast('err','❌ Gagal konfirmasi.'); }
 };
 
 window.resetPayment = async uid => {
     try {
+        const u = usersData[uid];
         await update(ref(db,`users/${uid}`), { payStatus:'pending' });
+        await addPaymentLog(uid, 'reset', `Status pembayaran di-reset ke pending oleh Admin`, { roomId:u?.roomId });
         showToast('ok', '🔄 Status reset ke pending.');
     } catch(e) { showToast('err','❌ Gagal reset.'); }
 };
 
+// ── PAYMENT HISTORY MODAL ──
+window.showPaymentHistory = async uid => {
+    const u    = usersData[uid];
+    const snap = await get(ref(db, `paymentHistory/${uid}`));
+    const logs = snap.exists() ? Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp) : [];
+
+    el('history-modal-name').innerText = u?.name || '---';
+    el('history-list').innerHTML = logs.length
+        ? logs.map(log => {
+            const typeMap = {
+                lunas:    { icon:'✅', label:'Lunas',     color:'var(--green)'  },
+                reset:    { icon:'🔄', label:'Reset',     color:'var(--yellow)' },
+                assign:   { icon:'🏠', label:'Check-in',  color:'var(--accent)' },
+                checkout: { icon:'🚪', label:'Check-out', color:'var(--muted)'  },
+                denda:    { icon:'⚠️', label:'Denda',     color:'var(--red)'    },
+            };
+            const t = typeMap[log.type] || { icon:'📋', label:log.type, color:'var(--text)' };
+            return `<div style="display:flex;gap:12px;align-items:flex-start;padding:14px;background:var(--surface2);border-radius:14px;border:1px solid var(--border)">
+                <div style="font-size:1.4rem;flex-shrink:0">${t.icon}</div>
+                <div style="flex:1">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                        <span style="font-weight:800;color:${t.color}">${t.label}</span>
+                        <span style="font-size:.68rem;color:var(--muted)">${fmtDate(log.timestamp)}</span>
+                    </div>
+                    <div style="font-size:.78rem;color:var(--muted)">${log.note||''}</div>
+                    ${log.roomId ? `<div style="font-size:.7rem;margin-top:4px"><span class="badge badge-orange">${log.roomId}</span></div>` : ''}
+                    ${log.total  ? `<div style="font-size:.75rem;color:var(--text);margin-top:4px">Total: <strong>${fmtRp(log.total)}</strong>${log.fine>0?` (termasuk denda ${fmtRp(log.fine)})`:''}` : ''}
+                    ${log.period ? `<div style="font-size:.7rem;color:var(--muted);margin-top:2px">Periode: ${log.period}</div>` : ''}
+                </div>
+            </div>`;
+        }).join('')
+        : `<div style="text-align:center;padding:32px;color:var(--muted)">Belum ada riwayat pembayaran.</div>`;
+
+    el('history-modal')?.classList.add('show');
+};
+
+window.closeHistoryModal = () => el('history-modal')?.classList.remove('show');
+el('history-modal')?.addEventListener('click', e => { if(e.target===el('history-modal')) window.closeHistoryModal(); });
+
 // ══════════════════════════════════════════════════
-// ⑩ TENANT — LISTENERS & PANELS
+// ⑪ TENANT — LISTENERS & PANELS
+// (single definition — no duplicate, no re-assignment)
 // ══════════════════════════════════════════════════
 function startTenantListeners(uid) {
-    // Listen ke data user sendiri
     onValue(ref(db,`users/${uid}`), snap => {
         if (!snap.exists()) return;
         const u = snap.val();
         renderTenantStatus(u);
         renderTenantBilling(u);
+        // Fine notification banner
+        if (u.roomId) showFineNotif(u);
+        else { const b = el('fine-banner'); if (b) b.style.display = 'none'; }
     });
-    // Listen ke rooms (hanya status, tanpa data penghuni lain)
     onValue(ref(db,'rooms'), snap => {
         if (!snap.exists()) return;
         renderTenantKosInfo(snap.val());
@@ -719,9 +806,9 @@ function renderTenantStatus(u) {
     el('t-no-room').style.display  = 'none';
     el('t-has-room').style.display = 'block';
 
-    const fine        = calcFine(u);
-    const remaining   = u.endDate ? daysBetween(Date.now(), u.endDate) : 0;
-    const statusCard  = el('t-status-card');
+    const fine      = calcFine(u);
+    const remaining = u.endDate ? daysBetween(Date.now(), u.endDate) : 0;
+    const statusCard= el('t-status-card');
 
     if (fine > 0) {
         statusCard.className = 'status-big danger';
@@ -753,8 +840,8 @@ function renderTenantStatus(u) {
 
 function renderTenantBilling(u) {
     if (!u.roomId) {
-        el('t-bill-no-room').style.display  = 'block';
-        el('t-bill-content').style.display  = 'none';
+        el('t-bill-no-room').style.display = 'block';
+        el('t-bill-content').style.display = 'none';
         return;
     }
     el('t-bill-no-room').style.display = 'none';
@@ -772,7 +859,7 @@ function renderTenantBilling(u) {
         { label:'Tipe Sewa',  val:u.rentType==='yearly'?'Tahunan (10 bulan harga)':'Bulanan', color:'var(--muted)' },
         { label:'Jatuh Tempo',val:fmtDate(u.endDate), color:'var(--text)' },
         { label:'Status Bayar',val:u.payStatus==='lunas'?'✅ Lunas':'⏳ Menunggu Konfirmasi Admin', color:u.payStatus==='lunas'?'var(--green)':'var(--yellow)' },
-        fine>0 ? { label:'Denda (5%/bulan)', val:fmtRp(fine), color:'var(--red)' } : null,
+        fine>0 ? { label:'Denda (5%/bulan)', val:fmtRp(fine), color:'var(--red)' }   : null,
         fine>0 ? { label:'TOTAL', val:fmtRp(total), color:'var(--accent)' } : null,
     ].filter(Boolean);
 
@@ -793,299 +880,16 @@ function renderTenantKosInfo(rooms) {
     el('ti-empty').innerText  = empty;
     el('ti-pct').innerText    = pct + '%';
 
-    const maleRooms   = list.filter(r=>r.gender==='male');
-    const femaleRooms = list.filter(r=>r.gender==='female');
-
     const roomCard = r => `<div style="background:var(--surface2);border:1px solid ${r.status==='empty'?'rgba(34,197,94,.25)':'rgba(249,115,22,.2)'};border-radius:10px;padding:10px;text-align:center">
         <div style="font-weight:800;font-size:.82rem">${r.id}</div>
         <div style="font-size:.6rem;margin-top:4px;font-weight:700;color:${r.status==='empty'?'var(--green)':'var(--accent)'}">${r.status==='empty'?'Kosong':'Terisi'}</div>
     </div>`;
 
-    el('ti-male-grid').innerHTML   = maleRooms.map(roomCard).join('');
-    el('ti-female-grid').innerHTML = femaleRooms.map(roomCard).join('');
+    el('ti-male-grid').innerHTML   = list.filter(r=>r.gender==='male').map(roomCard).join('');
+    el('ti-female-grid').innerHTML = list.filter(r=>r.gender==='female').map(roomCard).join('');
 }
 
-// ══════════════════════════════════════════════════
-// ⑪ FORM UI HELPERS
-// ══════════════════════════════════════════════════
-window.togglePw = (id, btn) => {
-    const input = document.getElementById(id);
-    const show  = input.type==='password';
-    input.type  = show ? 'text' : 'password';
-    btn.innerText = show ? '🙈' : '👁';
-};
-
-window.chkUsername = val => {
-    const el2 = el('r-user-chk');
-    const ok  = /^[a-z0-9_]{3,20}$/.test(val.toLowerCase());
-    el2.innerText   = val ? (ok?'✅ Format username valid':'⚠️ 3-20 karakter, a-z/0-9/_ saja') : '';
-    el2.style.color = ok ? 'var(--green)' : '#f97316';
-};
-
-window.chkStrength = pw => {
-    let s=0;
-    if(pw.length>=6)s++; if(pw.length>=10)s++;
-    if(/[A-Z]/.test(pw))s++; if(/[0-9]/.test(pw))s++;
-    if(/[^A-Za-z0-9]/.test(pw))s++;
-    const lvl=[
-        {p:'0%',c:'transparent',t:''},
-        {p:'20%',c:'#ef4444',t:'😬 Terlalu lemah'},
-        {p:'45%',c:'#f97316',t:'😐 Lumayan'},
-        {p:'70%',c:'#eab308',t:'🙂 Cukup kuat'},
-        {p:'88%',c:'#22c55e',t:'😎 Kuat'},
-        {p:'100%',c:'#16a34a',t:'🔒 Sangat kuat!'},
-    ][s]||{p:'0%',c:'transparent',t:''};
-    el('s-fill').style.cssText=`width:${lvl.p};background:${lvl.c}`;
-    const lbl=el('s-lbl'); lbl.innerText=lvl.t; lbl.style.color=lvl.c;
-};
-
-// Close modals on overlay click
-el('assign-modal').addEventListener('click',e=>{ if(e.target===el('assign-modal')) window.closeAssignModal(); });
-el('evict-modal').addEventListener('click', e=>{ if(e.target===el('evict-modal'))  window.closeEvictModal();  });
-
-// Enter key di auth form
-document.addEventListener('keydown', e => {
-    if (e.key!=='Enter') return;
-    const loginVis = el('auth-form-login')?.style.display !== 'none';
-    const regVis   = el('auth-form-register')?.style.display !== 'none';
-    const modalOpen= el('auth-modal')?.classList.contains('show');
-    if (!modalOpen) return;
-    if (loginVis) window.handleLogin();
-    else if (regVis) window.handleRegister();
-});
-
-// ══════════════════════════════════════════════════
-// ⑫ FITUR BARU: VALIDASI GENDER KAMAR (⑤)
-// ══════════════════════════════════════════════════
-
-// Ambil gender penyewa dari data akun (dari email / nama)
-// Kita simpan gender saat register → field 'gender' di DB
-// Tapi karena register lama belum ada field gender,
-// kita validasi di assign: kamar A = pria, kamar B = wanita
-// Admin harus isi gender penyewa saat assign jika belum ada
-
-function getRoomGender(roomId) {
-    return roomId?.startsWith('A') ? 'male' : 'female';
-}
-
-// Override doAssign dengan validasi gender
-const _originalDoAssign = window.doAssign;
-window.doAssign = async () => {
-    const tenantUid = el('assign-tenant-select').value;
-    const roomId    = selectedRoomId;
-    const room      = roomsData[roomId];
-
-    if (!tenantUid || !room) { showAlert('assign-alert','err','⚠️ Pilih penyewa dulu!'); return; }
-
-    // ── VALIDASI GENDER ──────────────────────────────
-    const tenant      = usersData[tenantUid];
-    const roomGender  = getRoomGender(roomId);
-    const tenantGender= tenant?.gender; // 'male' / 'female' / undefined
-
-    if (tenantGender && tenantGender !== roomGender) {
-        const roomLabel   = roomGender   === 'male' ? '👨 Pria'   : '👩 Wanita';
-        const tenantLabel = tenantGender === 'male' ? '👨 Pria'   : '👩 Wanita';
-        showAlert('assign-alert','err',
-            `⚠️ Kamar ${roomId} adalah zona ${roomLabel}, tapi penyewa ini terdaftar sebagai ${tenantLabel}. Tidak bisa di-assign!`
-        );
-        return;
-    }
-
-    // Kalau gender belum diset, tampilkan warning tapi tetap lanjut
-    if (!tenantGender) {
-        showAlert('assign-alert','warn',
-            `⚠️ Gender penyewa belum diset. Pastikan kamar ${roomId} (${roomGender==='male'?'Pria':'Wanita'}) sesuai.`
-        );
-        // Beri waktu admin baca warning, lanjut 1.5 detik kemudian
-        await new Promise(r => setTimeout(r, 1500));
-    }
-
-    // ── LANJUT PROSES ASSIGN ────────────────────────
-    const type     = el('assign-type').value;
-    const startStr = el('assign-start').value;
-    const endStr   = el('assign-end').value;
-
-    if (!startStr) { showAlert('assign-alert','err','⚠️ Isi tanggal masuk!'); return; }
-    if (!endStr)   { showAlert('assign-alert','err','⚠️ Isi tanggal selesai!'); return; }
-
-    const startTs = new Date(startStr).getTime();
-    const endTs   = new Date(endStr).getTime();
-    if (endTs <= startTs) { showAlert('assign-alert','err','⚠️ Tanggal selesai harus setelah tanggal masuk!'); return; }
-
-    setLoading('assign-btn','assign-btn-txt','assign-spin', true);
-
-    try {
-        const price   = getPrice(type);
-        const updates = {};
-
-        updates[`rooms/${roomId}/status`]     = 'filled';
-        updates[`rooms/${roomId}/tenantUid`]  = tenantUid;
-        updates[`rooms/${roomId}/tenantName`] = tenant?.name || '';
-
-        updates[`users/${tenantUid}/roomId`]    = roomId;
-        updates[`users/${tenantUid}/rentType`]  = type;
-        updates[`users/${tenantUid}/startDate`] = startTs;
-        updates[`users/${tenantUid}/endDate`]   = endTs;
-        updates[`users/${tenantUid}/price`]     = price;
-        updates[`users/${tenantUid}/payStatus`] = 'pending';
-        updates[`users/${tenantUid}/fineAmount`]= 0;
-
-        // ── CATAT RIWAYAT ASSIGN ──
-        const histKey = `paymentHistory/${tenantUid}/${Date.now()}`;
-        updates[histKey] = {
-            type:      'assign',
-            roomId,
-            rentType:  type,
-            price,
-            startDate: startTs,
-            endDate:   endTs,
-            adminNote: `Check-in oleh Admin`,
-            timestamp: Date.now()
-        };
-
-        await update(ref(db), updates);
-        showToast('ok', `✅ ${tenant?.name} berhasil di-assign ke ${roomId}`);
-        window.closeAssignModal();
-    } catch(e) {
-        showAlert('assign-alert','err', `⚠️ Gagal: ${e.message}`);
-    } finally {
-        setLoading('assign-btn','assign-btn-txt','assign-spin', false);
-    }
-};
-
-// ══════════════════════════════════════════════════
-// ⑬ FITUR BARU: RIWAYAT PEMBAYARAN (②)
-// ══════════════════════════════════════════════════
-
-// Tambah log ke riwayat setiap kali konfirmasi lunas / denda / evict
-async function addPaymentLog(tenantUid, type, note, extra = {}) {
-    const logRef = ref(db, `paymentHistory/${tenantUid}/${Date.now()}`);
-    await set(logRef, {
-        type,
-        note,
-        timestamp: Date.now(),
-        ...extra
-    });
-}
-
-// Override confirmPayment dengan logging
-window.confirmPayment = async uid => {
-    try {
-        const u     = usersData[uid];
-        const fine  = calcFine(u);
-        const total = (u?.price || 0) + fine;
-
-        await update(ref(db,`users/${uid}`), { payStatus:'lunas', fineAmount:0 });
-
-        // Catat riwayat
-        await addPaymentLog(uid, 'lunas', `Pembayaran dikonfirmasi lunas oleh Admin`, {
-            roomId:    u?.roomId,
-            amount:    u?.price || 0,
-            fine,
-            total,
-            period:    `${fmtDate(u?.startDate)} → ${fmtDate(u?.endDate)}`
-        });
-
-        showToast('ok', '✅ Pembayaran dikonfirmasi lunas!');
-    } catch(e) { showToast('err','❌ Gagal konfirmasi.'); }
-};
-
-// Override resetPayment dengan logging
-window.resetPayment = async uid => {
-    try {
-        const u = usersData[uid];
-        await update(ref(db,`users/${uid}`), { payStatus:'pending' });
-        await addPaymentLog(uid, 'reset', `Status pembayaran di-reset ke pending oleh Admin`, {
-            roomId: u?.roomId
-        });
-        showToast('ok', '🔄 Status reset ke pending.');
-    } catch(e) { showToast('err','❌ Gagal reset.'); }
-};
-
-// Override doEvict dengan logging
-const _origEvict = window.doEvict;
-window.doEvict = async () => {
-    const room      = roomsData[selectedRoomId]; if (!room) return;
-    const tenantEntry = Object.entries(usersData).find(([,u])=>u.roomId===selectedRoomId);
-    if (!tenantEntry) { window.closeEvictModal(); return; }
-
-    const [tenantUid, tenant] = tenantEntry;
-    try {
-        const updates = {};
-        updates[`rooms/${selectedRoomId}/status`]     = 'empty';
-        updates[`rooms/${selectedRoomId}/tenantUid`]  = null;
-        updates[`rooms/${selectedRoomId}/tenantName`] = null;
-        updates[`users/${tenantUid}/roomId`]          = null;
-        updates[`users/${tenantUid}/rentType`]        = null;
-        updates[`users/${tenantUid}/startDate`]       = null;
-        updates[`users/${tenantUid}/endDate`]         = null;
-        updates[`users/${tenantUid}/price`]           = null;
-        updates[`users/${tenantUid}/payStatus`]       = 'belum';
-        updates[`users/${tenantUid}/fineAmount`]      = 0;
-
-        // Catat riwayat check-out
-        const histKey = `paymentHistory/${tenantUid}/${Date.now()}`;
-        updates[histKey] = {
-            type:      'checkout',
-            roomId:    selectedRoomId,
-            note:      `Check-out dari ${selectedRoomId} oleh Admin`,
-            timestamp: Date.now()
-        };
-
-        await update(ref(db), updates);
-        showToast('ok', `✅ Penyewa berhasil dilepas dari ${selectedRoomId}`);
-        window.closeEvictModal();
-    } catch(e) {
-        showToast('err', `❌ Gagal: ${e.message}`);
-    }
-};
-
-// Render riwayat pembayaran di panel admin (tenants)
-window.showPaymentHistory = async uid => {
-    const u    = usersData[uid];
-    const snap = await get(ref(db, `paymentHistory/${uid}`));
-    const logs = snap.exists() ? Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp) : [];
-
-    // Tampilkan di modal history
-    const modal = el('history-modal');
-    el('history-modal-name').innerText = u?.name || '---';
-
-    el('history-list').innerHTML = logs.length
-        ? logs.map(log => {
-            const typeMap = {
-                lunas:    { icon:'✅', label:'Lunas',      color:'var(--green)'  },
-                reset:    { icon:'🔄', label:'Reset',      color:'var(--yellow)' },
-                assign:   { icon:'🏠', label:'Check-in',   color:'var(--accent)' },
-                checkout: { icon:'🚪', label:'Check-out',  color:'var(--muted)'  },
-                denda:    { icon:'⚠️', label:'Denda',      color:'var(--red)'    },
-            };
-            const t = typeMap[log.type] || { icon:'📋', label:log.type, color:'var(--text)' };
-            return `<div style="display:flex;gap:12px;align-items:flex-start;padding:14px;background:var(--surface2);border-radius:14px;border:1px solid var(--border)">
-                <div style="font-size:1.4rem;flex-shrink:0">${t.icon}</div>
-                <div style="flex:1">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                        <span style="font-weight:800;color:${t.color}">${t.label}</span>
-                        <span style="font-size:.68rem;color:var(--muted)">${fmtDate(log.timestamp)}</span>
-                    </div>
-                    <div style="font-size:.78rem;color:var(--muted)">${log.note || ''}</div>
-                    ${log.roomId   ? `<div style="font-size:.7rem;margin-top:4px"><span class="badge badge-orange">${log.roomId}</span></div>` : ''}
-                    ${log.total    ? `<div style="font-size:.75rem;color:var(--text);margin-top:4px">Total: <strong>${fmtRp(log.total)}</strong>${log.fine>0?` (termasuk denda ${fmtRp(log.fine)})`:''}` : ''}
-                    ${log.period   ? `<div style="font-size:.7rem;color:var(--muted);margin-top:2px">Periode: ${log.period}</div>` : ''}
-                </div>
-            </div>`;
-        }).join('')
-        : `<div style="text-align:center;padding:32px;color:var(--muted)">Belum ada riwayat pembayaran.</div>`;
-
-    modal.classList.add('show');
-};
-
-window.closeHistoryModal = () => el('history-modal').classList.remove('show');
-el('history-modal')?.addEventListener('click', e => { if(e.target===el('history-modal')) window.closeHistoryModal(); });
-
-// ══════════════════════════════════════════════════
-// ⑭ FITUR BARU: NOTIF BANNER DENDA (①)
-// ══════════════════════════════════════════════════
-
+// ── FINE NOTIFICATION BANNER ──
 function showFineNotif(tenant) {
     const banner = el('fine-banner');
     if (!banner) return;
@@ -1094,50 +898,75 @@ function showFineNotif(tenant) {
     const remaining = tenant.endDate ? daysBetween(Date.now(), tenant.endDate) : null;
 
     if (fine > 0) {
-        // Ada denda
         el('fine-banner-icon').innerText = '🚨';
         el('fine-banner-msg').innerHTML  =
             `Kamu memiliki <strong>denda ${fmtRp(fine)}</strong> karena terlambat bayar. Segera hubungi admin!`;
-        banner.className = 'fine-banner danger';
+        banner.className     = 'fine-banner danger';
         banner.style.display = 'flex';
     } else if (remaining !== null && remaining <= 7 && remaining >= 0) {
-        // Mau jatuh tempo
         el('fine-banner-icon').innerText = '⏰';
         el('fine-banner-msg').innerHTML  =
             `Sewa lo akan berakhir dalam <strong>${remaining} hari</strong> (${fmtDate(tenant.endDate)}). Segera perpanjang!`;
-        banner.className = 'fine-banner warn';
+        banner.className     = 'fine-banner warn';
         banner.style.display = 'flex';
     } else if (remaining !== null && remaining < 0 && fine === 0) {
-        // Lewat jatuh tempo tapi masih grace period
         el('fine-banner-icon').innerText = '⚠️';
         el('fine-banner-msg').innerHTML  =
             `Masa sewa lo sudah berakhir. Denda akan berlaku dalam <strong>${LATE_GRACE_DAYS - Math.abs(remaining)} hari</strong> lagi.`;
-        banner.className = 'fine-banner warn';
+        banner.className     = 'fine-banner warn';
         banner.style.display = 'flex';
     } else {
         banner.style.display = 'none';
     }
 }
 
-// Patch startTenantListeners biar panggil showFineNotif juga
-const _origStartTenant = startTenantListeners;
-function startTenantListeners(uid) {
-    onValue(ref(db,`users/${uid}`), snap => {
-        if (!snap.exists()) return;
-        const u = snap.val();
-        renderTenantStatus(u);
-        renderTenantBilling(u);
-        // Tampilkan banner notif denda
-        if (u.roomId) showFineNotif(u);
-        else { const b=el('fine-banner'); if(b) b.style.display='none'; }
-    });
-    onValue(ref(db,'rooms'), snap => {
-        if (!snap.exists()) return;
-        renderTenantKosInfo(snap.val());
-    });
-}
+// ══════════════════════════════════════════════════
+// ⑫ FORM UI HELPERS
+// ══════════════════════════════════════════════════
+window.togglePw = (id, btn) => {
+    const input = el(id);
+    const show  = input.type === 'password';
+    input.type  = show ? 'text' : 'password';
+    btn.innerText = show ? '🙈' : '👁';
+};
 
-// ══════════════════════════════════════════════════
-// ⑮ SHORTHAND UTIL
-// ══════════════════════════════════════════════════
-function el(id) { return document.getElementById(id); }
+window.chkUsername = val => {
+    const elU = el('r-user-chk');
+    const ok  = /^[a-z0-9_]{3,20}$/.test(val.toLowerCase());
+    elU.innerText   = val ? (ok ? '✅ Format username valid' : '⚠️ 3-20 karakter, a-z/0-9/_ saja') : '';
+    elU.style.color = ok ? 'var(--green)' : '#f97316';
+};
+
+window.chkStrength = pw => {
+    let s = 0;
+    if (pw.length>=6) s++; if (pw.length>=10) s++;
+    if (/[A-Z]/.test(pw)) s++; if (/[0-9]/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    const lvl = [
+        {p:'0%',  c:'transparent', t:''},
+        {p:'20%', c:'#ef4444',     t:'😬 Terlalu lemah'},
+        {p:'45%', c:'#f97316',     t:'😐 Lumayan'},
+        {p:'70%', c:'#eab308',     t:'🙂 Cukup kuat'},
+        {p:'88%', c:'#22c55e',     t:'😎 Kuat'},
+        {p:'100%',c:'#16a34a',     t:'🔒 Sangat kuat!'},
+    ][s] || {p:'0%',c:'transparent',t:''};
+    el('s-fill').style.cssText = `width:${lvl.p};background:${lvl.c}`;
+    const lbl = el('s-lbl');
+    lbl.innerText   = lvl.t;
+    lbl.style.color = lvl.c;
+};
+
+// Close modals on overlay click
+el('assign-modal')?.addEventListener('click', e => { if (e.target===el('assign-modal')) window.closeAssignModal(); });
+el('evict-modal')?.addEventListener('click',  e => { if (e.target===el('evict-modal'))  window.closeEvictModal();  });
+
+// Enter key in auth forms
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const modalOpen = el('auth-modal')?.classList.contains('show');
+    if (!modalOpen) return;
+    const loginVis = el('auth-form-login')?.style.display !== 'none';
+    const regVis   = el('auth-form-register')?.style.display !== 'none';
+    if (loginVis) window.handleLogin();
+    else if (regVis) window.handleRegister();
+});
